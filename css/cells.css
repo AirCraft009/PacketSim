@@ -1,0 +1,41 @@
+.grid {
+      display: grid;
+      grid-template-columns: repeat(16, 1fr); /* 8 columns */
+      grid-template-rows: repeat(16, 1fr);    /* 8 rows */
+      width: 640px;
+      height: 640px;
+      border: 2px solid black;
+}
+
+.cell {
+    border: 1px solid black;
+    background: white;
+    position: relative;
+}
+
+.cell.hover {
+    outline: 3px solid blue;
+}
+
+.draggable {
+    width: 39px;
+    height: 39px;
+    cursor: grab;
+}
+
+.board-wrapper {
+  position: relative;
+  width: 600px;
+  height: 600px;
+}
+
+#overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#space-maker{
+  height: 100px;
+  display: block;
+}
