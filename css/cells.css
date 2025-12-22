@@ -1,10 +1,17 @@
 .grid {
       display: grid;
-      grid-template-columns: repeat(16, 1fr); /* 8 columns */
-      grid-template-rows: repeat(16, 1fr);    /* 8 rows */
-      width: 640px;
-      height: 640px;
+      grid-template-columns: repeat(8, 1fr); /* 8 columns */
+      grid-template-rows: repeat(8, 1fr);    /* 8 rows */
+      width: 320px;
+      height: 320px;
       border: 2px solid black;
+      z-index: 1;
+}
+
+#overlay{
+  z-index: 10;
+  width: 320px;
+  height: 320px;
 }
 
 .cell {
@@ -18,15 +25,16 @@
 }
 
 .draggable {
-    width: 39px;
-    height: 39px;
+    width: 38px;
+    height: 38px;
     cursor: grab;
+    z-index: 11;
 }
 
 .board-wrapper {
   position: relative;
-  width: 600px;
-  height: 600px;
+  width: fit-content;
+  height: fit-content;
 }
 
 #overlay {
@@ -38,4 +46,6 @@
 #space-maker{
   height: 100px;
   display: block;
+  color: white;
+  background-color: white;
 }
