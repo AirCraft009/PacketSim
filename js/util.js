@@ -1,3 +1,8 @@
+const svg = document.getElementById("overlay");
+
+
+// Utility functions for drawing and deleting lines
+
 function centerOf(el) {
   const r = el.getBoundingClientRect();
   return {
@@ -6,10 +11,9 @@ function centerOf(el) {
   };
 }
 
-export function drawLine(elA, elB) {
-  const svg = document.getElementById("overlay");
-  const a = centerOf(elA);
-  const b = centerOf(elB);
+export function drawLine(componentA, componentB) {
+  const a = centerOf(componentA.cell);
+  const b = centerOf(componentB.cell);
   const svgRect = svg.getBoundingClientRect();
 
   const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -20,6 +24,15 @@ export function drawLine(elA, elB) {
   line.setAttribute("y2", b.y - svgRect.top);
   line.setAttribute("stroke", "black");
   line.setAttribute("stroke-width", "2");
+  line.setAttribute("index-a", componentA.index);
+  line.setAttribute("index-b", componentB.index);
 
   svg.appendChild(line);
+}
+
+export function removeConnections(index) {
+  const line = document.getElementById("overlay").querySelectorAll(`line[index-a='${index}'], line[index-b='${index}']`);
+  line.forEach(e => {
+    svg.removeChild(e);
+  });
 }

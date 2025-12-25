@@ -1,17 +1,24 @@
+:root {
+    --cell-size: 40px;
+    --col-count: 8;
+    --grid-dimension: calc(var(--cell-size) * var(--col-count));
+    --grid-icon-size: calc(var(--cell-size) - 4px);
+}
+
 .grid {
       display: grid;
-      grid-template-columns: repeat(8, 1fr); /* 8 columns */
-      grid-template-rows: repeat(8, 1fr);    /* 8 rows */
-      width: 320px;
-      height: 320px;
+      grid-template-columns: repeat(var(--col-count), 1fr); /* 8 columns */
+      grid-template-rows: repeat(var(--col-count), 1fr);    /* 8 rows */
+      width: var(--grid-dimension);
+      height: var(--grid-dimension);
       border: 2px solid black;
       z-index: 1;
 }
 
 #overlay{
   z-index: 10;
-  width: 320px;
-  height: 320px;
+  width: var(--grid-dimension);
+  height: var(--grid-dimension);
 }
 
 .cell {
@@ -25,8 +32,8 @@
 }
 
 .draggable {
-    width: 38px;
-    height: 38px;
+    width: var(--grid-icon-size);
+    height: var(--grid-icon-size);
     cursor: grab;
     z-index: 11;
 }

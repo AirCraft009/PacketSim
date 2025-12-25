@@ -1,4 +1,6 @@
 import * as Startup from "./startup.js"
 
-Startup.InitListeners();
+Startup.InitDocumentListeners();
 Startup.createGrid(64);
+
+
