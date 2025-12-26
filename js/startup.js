@@ -1,21 +1,38 @@
 import * as Utils from "./util.js"
 
 const grid = document.getElementById("grid");
-const piece = document.getElementById("piece");
+const editBox = document.getElementById("edit-box");
 
 var connectingMode = false;
 var connStart;
+var selected = false;
 
 var draggedTemplate = null;
 
 let komponenten;
+
 
 function Komponent(cell, type, index) {
   this.cell = cell
   this.type = type
   this.connections = new Set()
   this.index = index
+  this.ipAddress
 };
+
+function openEditBox() {
+  if (!selected || connStart == null) {
+    return;
+  } 
+
+  editBox.style.display = "block";
+  editBox.innerHTML = `
+    <h5>Component Editor</h5>
+    <p>Type: ${connStart.type}</p>
+    <p>Connections: ${Array.from(connStart.connections).length}</p>
+  `;
+}
+
 
 
 
@@ -42,17 +59,33 @@ export function createGrid(n) {
 
 function handleMouseClick(cell, i){
   cell.addEventListener("mousedown", (e) => {
+    resetHighlight();
     if(hasChild(cell)) {
       if (e.button == 2) {
         removeComponent(cell, i);
       }
-      if (e.button == 0) {
+      if (e.button == 0) { 
         connectComponents(i);
       }
+      highlightCell();
     }
     });
 }
 
+function highlightCell(){
+  if(connectingMode){
+    var cell = connStart.cell;
+    cell.style.backgroundColor = "blue";
+    selected = true;
+    openEditBox();
+  }
+}
+
+function resetHighlight(){
+  if(connStart == null) return;
+  connStart.cell.style.backgroundColor = "";
+  selected = false;
+}
 function removeComponent(cell, i){
   cell.removeChild(cell.firstChild);
   Utils.removeConnections(i);
@@ -77,8 +110,6 @@ function hasChild(cell){
   }
   return true;
 }
-
-
 function initDrag() {
   document.addEventListener("dragstart", (e) => {
     if (e.target.dataset.template) {
@@ -118,6 +149,7 @@ function InitDragListeners(cell, index) {
   });
 
   cell.addEventListener("drop", () => {
+    resetHighlight();
     cell.classList.remove("hover");
 
     if (!draggedTemplate) return;
@@ -157,4 +189,13 @@ function addConnection(komponent, index){
 
     connStart.connections.add(index);
     komponenten[index].connections.add(index);
+}
+
+function resetSimulation() {
+  grid.innerHTML = "";
+  document.getElementById("overlay").innerHTML = "";
+  komponenten = [];
+  connStart = null;
+  connectingMode = false;
+  selected = false;
 }
