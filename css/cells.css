@@ -35,7 +35,8 @@
     width: var(--grid-icon-size);
     height: var(--grid-icon-size);
     cursor: grab;
-    z-index: 11;
+    z-index: 20;
+    position: sticky;
 }
 
 .board-wrapper {

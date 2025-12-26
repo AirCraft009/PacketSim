@@ -1,4 +1,5 @@
 import * as Utils from "./util.js"
+import * as Network from "./network.js"
 
 const grid = document.getElementById("grid");
 const editBox = document.getElementById("edit-box");
@@ -10,28 +11,8 @@ var selected = false;
 var draggedTemplate = null;
 
 let komponenten;
+let network = new Network.Network(24, new Network.ip("192.168.9.3"));
 
-
-function Komponent(cell, type, index) {
-  this.cell = cell
-  this.type = type
-  this.connections = new Set()
-  this.index = index
-  this.ipAddress
-};
-
-function openEditBox() {
-  if (!selected || connStart == null) {
-    return;
-  } 
-
-  editBox.style.display = "block";
-  editBox.innerHTML = `
-    <h5>Component Editor</h5>
-    <p>Type: ${connStart.type}</p>
-    <p>Connections: ${Array.from(connStart.connections).length}</p>
-  `;
-}
 
 
 
@@ -42,6 +23,7 @@ function openEditBox() {
 // right click to remove component
 // n = number of cells
 export function createGrid(n) {
+  
   komponenten = Array.apply(null, Array(n)).map(function () { });
 
   for (let i = 0; i < n; i++) {
@@ -50,12 +32,19 @@ export function createGrid(n) {
 
 
     // set basic drag and drop listeners
-    InitDragListeners(cell, i);
+    setDragListeners(cell, i);
     handleMouseClick(cell, i);
 
     grid.appendChild(cell);
   }
 }
+
+
+
+
+
+
+
 
 function handleMouseClick(cell, i){
   cell.addEventListener("mousedown", (e) => {
@@ -80,6 +69,16 @@ function highlightCell(){
     openEditBox();
   }
 }
+
+
+
+
+
+
+
+
+
+// utility functions for component management and visual connection
 
 function resetHighlight(){
   if(connStart == null) return;
@@ -110,7 +109,7 @@ function hasChild(cell){
   }
   return true;
 }
-function initDrag() {
+function initDocumentDrag() {
   document.addEventListener("dragstart", (e) => {
     if (e.target.dataset.template) {
       draggedTemplate = e.target;
@@ -133,11 +132,11 @@ function disableInput() {
 }
 
 export function InitDocumentListeners() {
-  initDrag();
+  initDocumentDrag();
   disableInput();
 }
 
-function InitDragListeners(cell, index) {
+function setDragListeners(cell, index) {
   cell.addEventListener("dragover", (e) => e.preventDefault());
 
   cell.addEventListener("dragenter", () => {
@@ -147,6 +146,7 @@ function InitDragListeners(cell, index) {
   cell.addEventListener("dragleave", () => {
     cell.classList.remove("hover");
   });
+
 
   cell.addEventListener("drop", () => {
     resetHighlight();
@@ -161,12 +161,15 @@ function InitDragListeners(cell, index) {
     clone.removeAttribute("id");
     clone.removeAttribute("data-template");
 
-    clone.draggable = false; // or true if you want re-drag
+    clone.draggable = false; // false because I don't want to move the lines along with the component
     clone.style.pointerEvents = "none"; // optional
 
     cell.appendChild(clone);
 
-    komponenten[index] = new Komponent(cell, clone.dataset.type, index);
+
+    // the device is added to the base network.
+    // the Ip adress will newly be assigned if it's connected to a router and then belong to the routers network
+    komponenten[index] = new Network.Komponent(cell, clone.dataset.type, index, network.addDevice(index));
   });
 }
 
@@ -199,3 +202,17 @@ function resetSimulation() {
   connectingMode = false;
   selected = false;
 }
+
+function openEditBox() {
+  if (!selected || connStart == null) {
+    return;
+  } 
+
+  editBox.style.display = "block";
+  editBox.innerHTML = `
+    <h5>Component Editor</h5>
+    <p>Type: ${connStart.type}</p>
+    <p>Connections: ${Array.from(connStart.connections).length}</p>
+  `;
+}
+
