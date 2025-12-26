@@ -44,7 +44,7 @@ export class ip {
 export class Network {
     /**
      * 
-     * @param {a subnetmask expressed in the ammount of hostbits} subnet 
+     * @param {a subnetmask expressed in the ammount of networkbits} subnet 
      * @param {The start of the Network addr} ip
      */
     constructor(subnet, ip) {
@@ -57,6 +57,16 @@ export class Network {
     }
 
     addDevice(index) {
+        // check if network is full
+        // 32 - subnet gives the number of host bits
+        // 2^hostbits - 2 gives the number of usable addresses (we subtract 2 for network and broadcast addresses)
+        if (this.numDevices === Math.pow(2, 32 - this.subnet) - 2) {
+            console.error("Network full");
+            return null;
+        }
+        if (index < 0){
+            console.error("index can't be below 0", index);
+        }
         this.numDevices++;
         let newIp = this.hostIp.clone();
         newIp.modifyOctet(this.modifyOctet, this.hostIp.octets[this.modifyOctet] + this.numDevices);

@@ -27,7 +27,7 @@
 
 <div class="container" style="margin-top: 30px;">
   <div class="row">
-    <div class="col-auto">
+    <div class="col-2">
       <img src="imgs/transparent/pc.png" class="draggable" draggable="true" id="pc-template" data-template="true" data-type="pc">
       <img src="imgs/transparent/server.png" class="draggable" draggable="true" id="server" data-template="true" data-type="server">
       <img src="imgs/transparent/router.png" class="draggable" draggable="true" id="router" data-template="true" data-type="router">
@@ -43,12 +43,44 @@
       </div>
     </div>
 
-    <div class="col">
-      <div class="row" id="edit-box">
-        <h5>Component Editor</h5>
-        <div id="edit-content">
-          
+    <!-- ChatGPT generated code start -->
+    <aside class="col-6 border-start p-3" id ="editor">
+      <div class="row mb-2">
+        <div class="col-3">IP-Adress:</div>
+        <div class="col-5">
+          <span class="editable" contenteditable="true" data-key="ip">192.168.1.1</span>
+        </div>
       </div>
+          <!-- ChatGPT generated code end -->
+      <div class="row mb-2">
+        <div class="col-3">Type:</div>
+        <div class="col-5">
+          <span class="editable" contenteditable="true" data-key="type">Router</span>
+        </div>
+      </div>
+      <div class="row mb-2">
+        <div class="col-3">Mac-Adress:</div>
+        <div class="col-5">
+          <span class="editable" contenteditable="true" data-key="mac">33:33:33:33:33:33</span>
+        </div>
+      </div>
+      <div class="row mb-2">
+        <div class="col-3">Connections:</div>
+        <div class="col-5">
+          <span class="editable" contenteditable="true" data-key="connection">0</span>
+        </div>
+      </div>
+      <div class="row mb-2">
+        <div class="col-3">Standard-Gateway:</div>
+        <div class="col-5">
+          <span class="editable" contenteditable="true" data-key="gateway">192.168.1.0</span>
+        </div>
+      </div>
+      <div class="row mb-2">
+        <div class="col-7">
+        </div>
+      </div>
+    </aside>
     </div>
   </div>
 </div>
