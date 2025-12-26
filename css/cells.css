@@ -57,3 +57,20 @@
   color: white;
   background-color: white;
 }
+
+/**
+  * ChatGPT generated code start
+  */
+.editable {
+  display: inline-block;
+  min-width: 4ch;
+  outline: none;
+  cursor: text;
+}
+
+.editable:focus {
+  background: rgba(0,0,0,.05);
+}
+/**
+  * ChatGPT generated code end
+  */
