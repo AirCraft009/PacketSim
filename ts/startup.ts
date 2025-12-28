@@ -1,5 +1,5 @@
-import * as Utils from "./util"
-import * as Network from "./network";
+import * as Utils from "./util.js"
+import * as Network from "./network.js";
 
 // force types for bootstrap elements to be any
 declare var bootstrap: any;

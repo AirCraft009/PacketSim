@@ -1,4 +1,4 @@
-import { Komponent } from "./network";
+import { Komponent } from "./network.js";
 
 const svg : any = document.getElementById("overlay");
 
