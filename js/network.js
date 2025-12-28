@@ -53,8 +53,13 @@ export class ip {
 }
 export class Network {
     /**
+<<<<<<< HEAD
      *
      * @param {a subnetmask expressed in the ammount of networkbits} subnet
+=======
+     * 
+     * @param {a subnetmask expressed in the ammount of networkbits} subnet 
+>>>>>>> 43fcf3eb3d5ba3701d941bb4230d52cdbe97353c
      * @param {The start of the Network addr} ip
      */
     subnet;
@@ -78,7 +83,11 @@ export class Network {
             console.error("Network full");
             return null;
         }
+<<<<<<< HEAD
         if (index < 0) {
+=======
+        if (index < 0){
+>>>>>>> 43fcf3eb3d5ba3701d941bb4230d52cdbe97353c
             console.error("index can't be below 0", index);
         }
         this.numDevices++;
