@@ -5,7 +5,7 @@ import * as Network from "./network.js";
 declare var bootstrap: any;
 
 const grid: HTMLElement = document.getElementById("grid") as HTMLElement;
-const modalEl = document.getElementById('textModal');
+const modalEl = document.getElementById('textModal') as HTMLElement;
 const modal = new bootstrap.Modal(modalEl);
 const svg = document.getElementById("overlay") as HTMLElement;
 
@@ -16,13 +16,13 @@ var selected = false;
 var draggedTemplate: HTMLElement | null = null;
 
 let komponenten: Array<Network.Komponent | null>;
-let network = new Network.Network(24, new Network.ip("192.168.9.3"));
-let networks = [];
+let networks: Array<Network.Network> = [];
+networks[0] = Network.Network.NewBaseNetwork();
 
 // default state for the editor on the right
 // also used for rendering new information
 const state = {
-  ip: "192.168.1.1",
+  ip: "192.168.1.0",
   type: "router",
   mac: "aa:bb:cc:dd:ee:ff",
   connection: "0",
@@ -82,7 +82,7 @@ function handleMouseClick(cell: HTMLElement, i: number) {
     if (hasChild(cell)) {
       // right click to remove component
       if (e.button == 2) {
-        removeComponent(cell, i);
+        removeComponent(komponenten[i] as Network.Komponent);
       }
       // left click to connect components
       if (e.button == 0) {
@@ -131,7 +131,7 @@ function dropListener(cell: HTMLElement, index: number) {
 
     // the device is added to the base network.
     // the Ip adress will newly be assigned if it's connected to a router and then belong to the routers network
-    komponenten[index] = new Network.Komponent(cell, clone.dataset.type as string, index, network.addDevice(index) as Network.ip);
+    komponenten[index] = new Network.Komponent(cell, clone.dataset.type as string, index, networks[0].addDevice(index) as Network.ip, networks[0].hostIp);
     manageNetwork(komponenten[index]);
 
   });
@@ -142,16 +142,27 @@ function resetHighlight() {
   connStart.cell.style.backgroundColor = "";
   selected = false;
 }
-function removeComponent(cell: HTMLElement, i: number) {
-  cell.removeChild(cell.firstChild as ChildNode);
-  if (komponenten[i] == null) return;
-  for (let connIndex of komponenten[i].connections) {
+function removeComponent(komponent: Network.Komponent) {
+  removeVisual(komponent.index, komponent.cell);
+  var i = komponent.index;
+  const comp = komponenten[i] as Network.Komponent;
+  for (let connIndex of comp.connections) {
     if (komponenten[connIndex] == null) continue;
     komponenten[connIndex].connections.delete(i);
   }
-  Utils.removeConnections(i);
+  if (comp.type === "router"){
+    networks = networks.filter(c => !c.hostIp.equalsHost(comp.ipAddress));
+  }
   komponenten[i] = null;
+}
+
+function removeVisual(i : number, cell : HTMLElement) {
+  // remove the picture
+  cell.removeChild(cell.firstChild as ChildNode);
+  //remove lines connecting to other comps.
+  Utils.removeConnections(i);
   connectingMode = false;
+  selected = false;
   return;
 }
 
@@ -171,21 +182,49 @@ function connectComponents(i: number) {
  * @param {a newly added network komponent} komponent 
  */
 function manageNetwork(komponent: Network.Komponent) {
-  if (komponent.type === "router") {
-    // ask user for ip adress via modal
-    getRouterIpModal().then((ipString) => {
-        if (Network.ip.checkValidIpString(ipString as string)) {
-            const ipAdress = new Network.ip(ipString as string);
-            komponent.updateIpAddress(ipAdress);
-            // create a new network for this router
-            const newNetwork = new Network.Network(24, ipAdress);
-            networks.push(newNetwork);
-        } else {
-            alert("Invalid IP adress entered removing router");
-            removeComponent(komponent.cell, komponent.index);
-        }
-    });
+  networks[0].removeDevice(komponent.ipAddress);
+  if (komponent.type !== "router") {
+    return;
   }
+  // ask user for ip adress via modal
+  getRouterIpModal().then((ipString) => {
+    if (!ipString) {
+      alert("No IP entered removing router");
+      removeComponent(komponent);
+      return;
+    }
+
+    if (!Network.ip.checkValidIpString(ipString as string)) {
+      alert("Invalid IP adress entered removing router");
+      removeComponent(komponent);
+      return;
+    }
+    const ipAdress = new Network.ip(ipString as string);
+    if (!ipAdress.isHostIP()){
+      alert("All router IP's must end in 0 as they are Network IP's");
+      removeComponent(komponent);
+      return;
+    }
+    networks.forEach((network) => {
+
+      if (ipAdress.equalsHost(network.hostIp)) {
+        alert("Host part of IP already in use for other Network")
+        removeComponent(komponent);
+        return;
+      }
+    })
+    komponent.updateIpAddress(ipAdress);
+    komponent.standardGateway = ipAdress;
+    // create a new network for this router
+    const newNetwork = new Network.Network(ipAdress);
+    networks.push(newNetwork);
+    return;
+  })
+  .catch((error) => {
+    console.error("Error getting IP from modal:", error);
+    removeComponent(komponent);
+    return;
+  });
 }
 
 /**
@@ -200,31 +239,40 @@ function getRouterIpModal() {
 
     const submitHandler = (e: Event) => {
       e.preventDefault();
-      // close modal
-      modal.hide();
-
+      cleanup();
       const textInput = document.getElementById('textInput') as HTMLInputElement;
-      const value = textInput?.value || '';
-      const modalForm = document.getElementById('modalForm');
-      if (modalForm) {
-        modalForm.removeEventListener('submit', submitHandler);
-      }
 
       // resolve the promise with the entered value
       // same things as return in async functions
-      resolve(value);
+      resolve(textInput?.value || '');
     };
 
-    const modalForm = document.getElementById('modalForm'); 
+    const closeHandler = () => {
+      cleanup();
+      resolve(null);
+    };
+
+
+    const cleanup = () => {
+        modal.hide();
+        const modalForm = document.getElementById('modalForm');
+        if (modalForm) modalForm.removeEventListener('submit', submitHandler);
+        modalEl.removeEventListener('hidden.bs.modal', closeHandler);
+    };
+
+
+
+    const modalForm = document.getElementById('modalForm');
     if (modalForm) {
       modalForm.addEventListener('submit', submitHandler);
     }
+    modalEl.addEventListener('hidden.bs.modal', closeHandler);
   });
 }
 
 
 function initDocumentDrag() {
-  document.addEventListener("dragstart", (e : DragEvent) => {
+  document.addEventListener("dragstart", (e: DragEvent) => {
     const target = e.target as HTMLElement;
     if (target.dataset.template) {
       draggedTemplate = target;
@@ -246,8 +294,8 @@ function disableInput() {
   });
 
   // prevent new lines cause they look bad
-  document.querySelectorAll(".editable").forEach((element : any) => {
-    element.addEventListener("keydown", (e : KeyboardEvent) => {
+  document.querySelectorAll(".editable").forEach((element: any) => {
+    element.addEventListener("keydown", (e: KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
         // remove focus from the element
@@ -265,19 +313,19 @@ function openEditBox() {
   renderEditBox();
 }
 
-function updateState(komponent : Network.Komponent) {
+function updateState(komponent: Network.Komponent) {
   state.ip = komponent.ipAddress.toString();
   state.type = komponent.type;
   state.connection = (komponent.connections.size).toString();
-  //TODO: Implement MAC-Adress and Default Gateway
+  //TODO: Implement MAC-Adress 
   // state.mac = komponent.macAddress;
-  // state.gateway = komponent.gateway;
+  state.gateway = komponent.standardGateway.toString();
 }
 
 
 // renders new information to the edit box
 function renderEditBox() {
-  document.querySelectorAll(".editable").forEach((el : any) => {
+  document.querySelectorAll(".editable").forEach((el: any) => {
     const key = el.dataset.key as string;
     if (key in state) {
       el.textContent = state[key as keyof typeof state];
@@ -295,16 +343,34 @@ function highlightCell() {
   }
 }
 
-function addConnection(komponent : Network.Komponent, index : number) {
+function addConnection(komponent: Network.Komponent, index: number) {
   connStart = connStart as Network.Komponent;
   Utils.drawLine(komponent, connStart);
 
   if (komponenten[index] == null) return;
   connStart.connections.add(index);
   komponenten[index].connections.add(connStart.index);
+
+  if (connStart.type == "router") {
+
+  }
+  if(komponent.type == "router") {
+
+  }
 }
 
-function isvalidConnection(index : number) {
+/**
+ * Changes the network of the networkComp to the network of the router
+ * and gets a new ip from the network of the router
+ * 
+ * @param networkComp a network component connected to the router
+ * @param routerComp router that the networkComp is connected to
+ */
+function changeComponentNetwork(networkComp : Network.Komponent, routerComp : Network.Komponent) {
+
+}
+
+function isvalidConnection(index: number) {
   connStart = connStart as Network.Komponent;
   if (connectingMode) {
     connectingMode = false;
@@ -320,7 +386,7 @@ function isvalidConnection(index : number) {
   return false;
 }
 
-function hasChild(cell: HTMLElement) : boolean {
+function hasChild(cell: HTMLElement): boolean {
   if (!cell.firstChild) {
     connectingMode = false;
     return false;

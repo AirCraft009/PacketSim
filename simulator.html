@@ -84,40 +84,47 @@
         <div class="row mb-2">
           <div class="col-3">Subnetmask:</div>
           <div class="col-5">
-            <span class="editable" contenteditable="true" data-key="subnetmask">/24</span>
+            <span class="editable" contenteditable="false" data-key="subnetmask">/24</span>
           </div>
         </div>
+      
+        <div id="space-maker"></div>
+        <div class="form-group">
+          <label for="packet-data">Packet editor</label>
+          <input class="form-control" id="packet-data" placeholder="Enter Text Data contained in packet" rows="1">
+          <input class="form-control" id="target-ip" aria-describedby="target ip" placeholder="Enter Ip of target server">
+        </div>
+        <button type="button" class="btn btn-dark">Send Packet</button>
+      </aside>
 
-
-        <!-- 
+      <!-- 
         Modal for input of ip when router spawned 
         https://getbootstrap.com/docs/5.3/components/modal/
         -->
-        <div class="modal fade" id="textModal" tabindex="-1">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Enter Router Ip</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-              </div>
+      <div class="modal fade" id="textModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Enter Router Ip</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
 
-              <div class="modal-body">
-                <form id="modalForm">
-                  <input type="text" id="textInput" class="form-control" placeholder="192.168.0.0">
-                </form>
-              </div>
+            <div class="modal-body">
+              <form id="modalForm">
+                <input type="text" id="textInput" class="form-control" placeholder="192.168.0.0">
+              </form>
+            </div>
 
-              <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
           </div>
         </div>
-        <div class="row mb-2">
-          <div class="col-7">
-          </div>
+      </div>
+      <div class="row mb-2">
+        <div class="col-7">
         </div>
-      </aside>
+      </div>
     </div>
   </div>
   </div>

@@ -17,6 +17,40 @@ export class ip {
         return ip.octets.every(octet => octet === 0);
     }
 
+    isHostIP() {
+        return this.octets[3] === 0;
+    }
+
+    /**
+     * Checks if all octets except the last one equal eachother.\
+     * Because all networks use a /24 subnetmask the network addr is always has a 0 in the 4th octet.\
+     * So by checking 0 - 2 we only check if it's in the same network / the hostbits are the same
+     * @param ip 
+     * @returns 
+     */
+    equalsHost(ip: ip) { 
+        for (let i = 0; i < this.octets.length-1; i++){
+            if (this.octets[i] !== ip.octets[i]){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Checks if all octets equal eachother
+     * @param ip  
+     * @returns 
+     */
+    equals(ip: ip) {
+        for (let i = 0; i < this.octets.length; i++){
+            if (this.octets[i] !== ip.octets[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     constructOctets(ip: string) {
         var stringOctets = ip.split(".");
         if (stringOctets.length !== 4) {
@@ -64,7 +98,7 @@ export class ip {
 export class Network {
     /**
      * 
-     * @param {a subnetmask expressed in the ammount of networkbits} subnet 
+     * Implementation of a basic network with subnetmask 24
      * @param {The start of the Network addr} ip
      */
     subnet: number;
@@ -73,9 +107,9 @@ export class Network {
     numDevices: number
     networkDevices: Map<ip, number>;
 
-    constructor(subnet: number, ip: ip) {
-        this.subnet = subnet;
-        this.modifyOctet = Math.floor(subnet / 8);
+    constructor(ip: ip) {
+        this.subnet = 24;
+        this.modifyOctet = 3 // 24(host-bits)/8(size of a octet)
         this.hostIp = ip;
         this.numDevices = 0;
         //holds devices in terms of their IPs and indexes into the komponenten array
@@ -111,7 +145,7 @@ export class Network {
 
 
     static NewBaseNetwork() {
-        return new Network(24, new ip("192.168.0.0"));
+        return new Network(new ip("192.168.0.0"));
     }
 
 
@@ -124,14 +158,16 @@ export class Komponent {
     connections : Set<number>;
     index : number;
     ipAddress : ip;
+    standardGateway : ip;
 
 
-  constructor(cell : any, type: string, index: number, ipAddress: ip) {
+  constructor(cell : any, type: string, index: number, ipAddress: ip, standardGateway : ip) {
     this.cell = cell;
     this.type = type;
     this.connections = new Set();
     this.index = index;
     this.ipAddress = ipAddress;
+    this.standardGateway = standardGateway;
   }
 
   updateIpAddress(newIp: ip) {

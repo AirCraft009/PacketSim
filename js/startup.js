@@ -9,12 +9,12 @@ var connStart = null;
 var selected = false;
 var draggedTemplate = null;
 let komponenten;
-let network = new Network.Network(24, new Network.ip("192.168.9.3"));
 let networks = [];
+networks[0] = Network.Network.NewBaseNetwork();
 // default state for the editor on the right
 // also used for rendering new information
 const state = {
-    ip: "192.168.1.1",
+    ip: "192.168.1.0",
     type: "router",
     mac: "aa:bb:cc:dd:ee:ff",
     connection: "0",
@@ -57,7 +57,7 @@ function handleMouseClick(cell, i) {
         if (hasChild(cell)) {
             // right click to remove component
             if (e.button == 2) {
-                removeComponent(cell, i);
+                removeComponent(komponenten[i]);
             }
             // left click to connect components
             if (e.button == 0) {
@@ -97,7 +97,7 @@ function dropListener(cell, index) {
         cell.appendChild(clone);
         // the device is added to the base network.
         // the Ip adress will newly be assigned if it's connected to a router and then belong to the routers network
-        komponenten[index] = new Network.Komponent(cell, clone.dataset.type, index, network.addDevice(index));
+        komponenten[index] = new Network.Komponent(cell, clone.dataset.type, index, networks[0].addDevice(index), networks[0].hostIp);
         manageNetwork(komponenten[index]);
     });
 }
@@ -107,18 +107,27 @@ function resetHighlight() {
     connStart.cell.style.backgroundColor = "";
     selected = false;
 }
-function removeComponent(cell, i) {
-    cell.removeChild(cell.firstChild);
-    if (komponenten[i] == null)
-        return;
-    for (let connIndex of komponenten[i].connections) {
+function removeComponent(komponent) {
+    removeVisual(komponent.index, komponent.cell);
+    var i = komponent.index;
+    const comp = komponenten[i];
+    for (let connIndex of comp.connections) {
         if (komponenten[connIndex] == null)
             continue;
         komponenten[connIndex].connections.delete(i);
     }
-    Utils.removeConnections(i);
+    if (comp.type === "router") {
+        networks = networks.filter(c => !c.hostIp.equalsHost(comp.ipAddress));
+    }
     komponenten[i] = null;
+}
+function removeVisual(i, cell) {
+    // remove the picture
+    cell.removeChild(cell.firstChild);
+    //remove lines connecting to other comps.
+    Utils.removeConnections(i);
     connectingMode = false;
+    selected = false;
     return;
 }
 function connectComponents(i) {
@@ -136,22 +145,47 @@ function connectComponents(i) {
  * @param {a newly added network komponent} komponent
  */
 function manageNetwork(komponent) {
-    if (komponent.type === "router") {
-        // ask user for ip adress via modal
-        getRouterIpModal().then((ipString) => {
-            if (Network.ip.checkValidIpString(ipString)) {
-                const ipAdress = new Network.ip(ipString);
-                komponent.updateIpAddress(ipAdress);
-                // create a new network for this router
-                const newNetwork = new Network.Network(24, ipAdress);
-                networks.push(newNetwork);
-            }
-            else {
-                alert("Invalid IP adress entered removing router");
-                removeComponent(komponent.cell, komponent.index);
+    networks[0].removeDevice(komponent.ipAddress);
+    if (komponent.type !== "router") {
+        return;
+    }
+    // ask user for ip adress via modal
+    getRouterIpModal().then((ipString) => {
+        if (!ipString) {
+            alert("No IP entered removing router");
+            removeComponent(komponent);
+            return;
+        }
+        if (!Network.ip.checkValidIpString(ipString)) {
+            alert("Invalid IP adress entered removing router");
+            removeComponent(komponent);
+            return;
+        }
+        const ipAdress = new Network.ip(ipString);
+        if (!ipAdress.isHostIP()) {
+            alert("All router IP's must end in 0 as they are Network IP's");
+            removeComponent(komponent);
+            return;
+        }
+        networks.forEach((network) => {
+            if (ipAdress.equalsHost(network.hostIp)) {
+                alert("Host part of IP already in use for other Network");
+                removeComponent(komponent);
+                return;
             }
         });
-    }
+        komponent.updateIpAddress(ipAdress);
+        komponent.standardGateway = ipAdress;
+        // create a new network for this router
+        const newNetwork = new Network.Network(ipAdress);
+        networks.push(newNetwork);
+        return;
+    })
+        .catch((error) => {
+        console.error("Error getting IP from modal:", error);
+        removeComponent(komponent);
+        return;
+    });
 }
 /**
  * Asks the user for an IP address via a modal.
@@ -164,22 +198,28 @@ function getRouterIpModal() {
         modal.show();
         const submitHandler = (e) => {
             e.preventDefault();
-            // close modal
-            modal.hide();
+            cleanup();
             const textInput = document.getElementById('textInput');
-            const value = textInput?.value || '';
-            const modalForm = document.getElementById('modalForm');
-            if (modalForm) {
-                modalForm.removeEventListener('submit', submitHandler);
-            }
             // resolve the promise with the entered value
             // same things as return in async functions
-            resolve(value);
+            resolve(textInput?.value || '');
+        };
+        const closeHandler = () => {
+            cleanup();
+            resolve(null);
+        };
+        const cleanup = () => {
+            modal.hide();
+            const modalForm = document.getElementById('modalForm');
+            if (modalForm)
+                modalForm.removeEventListener('submit', submitHandler);
+            modalEl.removeEventListener('hidden.bs.modal', closeHandler);
         };
         const modalForm = document.getElementById('modalForm');
         if (modalForm) {
             modalForm.addEventListener('submit', submitHandler);
         }
+        modalEl.addEventListener('hidden.bs.modal', closeHandler);
     });
 }
 function initDocumentDrag() {
@@ -222,9 +262,9 @@ function updateState(komponent) {
     state.ip = komponent.ipAddress.toString();
     state.type = komponent.type;
     state.connection = (komponent.connections.size).toString();
-    //TODO: Implement MAC-Adress and Default Gateway
+    //TODO: Implement MAC-Adress 
     // state.mac = komponent.macAddress;
-    // state.gateway = komponent.gateway;
+    state.gateway = komponent.standardGateway.toString();
 }
 // renders new information to the edit box
 function renderEditBox() {
@@ -250,6 +290,19 @@ function addConnection(komponent, index) {
         return;
     connStart.connections.add(index);
     komponenten[index].connections.add(connStart.index);
+    if (connStart.type == "router") {
+    }
+    if (komponent.type == "router") {
+    }
+}
+/**
+ * Changes the network of the networkComp to the network of the router
+ * and gets a new ip from the network of the router
+ *
+ * @param networkComp a network component connected to the router
+ * @param routerComp router that the networkComp is connected to
+ */
+function changeComponentNetwork(networkComp, routerComp) {
 }
 function isvalidConnection(index) {
     connStart = connStart;
