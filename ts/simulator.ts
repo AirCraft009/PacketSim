@@ -1,6 +1,5 @@
-import * as Startup from "./startup.js";
+import * as core from "./core.js";
 
-Startup.InitDocumentListeners();
-Startup.createGrid(64);
-
+core.InitDocumentListeners();
+core.createGrid(64);
 

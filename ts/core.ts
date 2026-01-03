@@ -150,7 +150,13 @@ function removeComponent(komponent: Network.Komponent) {
     if (komponenten[connIndex] == null) continue;
     komponenten[connIndex].connections.delete(i);
   }
+  // TODO: remove device from network after fixing addDevice and removeDevice logic
+
   if (comp.type === "router"){
+    if (comp.ipAddress === networks[0].hostIp){
+      // can't remove the base network
+      return;
+    }
     networks = networks.filter(c => !c.hostIp.equalsHost(comp.ipAddress));
   }
   komponenten[i] = null;
@@ -182,10 +188,11 @@ function connectComponents(i: number) {
  * @param {a newly added network komponent} komponent 
  */
 function manageNetwork(komponent: Network.Komponent) {
-  networks[0].removeDevice(komponent.ipAddress);
   if (komponent.type !== "router") {
     return;
   }
+
+  networks[0].removeDevice(komponent.ipAddress);
   // ask user for ip adress via modal
   getRouterIpModal().then((ipString) => {
     if (!ipString) {
@@ -351,11 +358,16 @@ function addConnection(komponent: Network.Komponent, index: number) {
   connStart.connections.add(index);
   komponenten[index].connections.add(connStart.index);
 
-  if (connStart.type == "router") {
+  //don't change anything if both devices are routers
+  if (connStart.type == "router" && komponent.type == "router") {
+    return;
+  }
 
+  if (connStart.type == "router") {
+    changeComponentNetwork(komponent, connStart)
   }
   if(komponent.type == "router") {
-
+    changeComponentNetwork(connStart, komponent)
   }
 }
 
@@ -367,7 +379,18 @@ function addConnection(komponent: Network.Komponent, index: number) {
  * @param routerComp router that the networkComp is connected to
  */
 function changeComponentNetwork(networkComp : Network.Komponent, routerComp : Network.Komponent) {
-
+  networkComp.standardGateway = routerComp.standardGateway;
+  var routerNetwork = networks.filter(n=> n.hostIp === routerComp.ipAddress)[0];
+  if (routerNetwork === null) {
+    // impossible control path can't be null just for typescript
+    return;
+  }
+  var ip = routerNetwork.addDevice(networkComp.index);
+  if (!ip) {
+    //basically impossible as the 8x8 map doesn't allow for 253 devices
+    return;
+  }
+  networkComp.ipAddress = ip;
 }
 
 function isvalidConnection(index: number) {

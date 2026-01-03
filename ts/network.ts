@@ -116,6 +116,13 @@ export class Network {
         this.networkDevices = new Map();
     }
 
+    /**
+     * 
+     * doesn't correctly handle removal of comps yet if a device is removed that isn't at pos len-1
+     * the next added device will be assigned the same ip as the current top(len-1) position
+     * @param index 
+     * @returns 
+     */
     addDevice(index: number): ip | null {
         // check if network is full
         // 32 - subnet gives the number of host bits
