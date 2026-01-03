@@ -1,5 +1,4 @@
-import * as core from "./core.js";
+import * as main from "./main.js";
 
-core.InitDocumentListeners();
-core.createGrid(64);
-
+main.InitDocumentListeners();
+main.createGrid(64);

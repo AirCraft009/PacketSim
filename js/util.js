@@ -7,9 +7,9 @@ function centerOf(el) {
         y: r.top + r.height / 2
     };
 }
-export function drawLine(componentA, componentB) {
-    const a = centerOf(componentA.cell);
-    const b = centerOf(componentB.cell);
+export function drawLine(cellA, cellB, indexA, indexB) {
+    const a = centerOf(cellA);
+    const b = centerOf(cellB);
     const svgRect = svg.getBoundingClientRect();
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute("x1", (a.x - svgRect.left).toString());
@@ -18,8 +18,8 @@ export function drawLine(componentA, componentB) {
     line.setAttribute("y2", (b.y - svgRect.top).toString());
     line.setAttribute("stroke", "black");
     line.setAttribute("stroke-width", "2");
-    line.setAttribute("index-a", componentA.index.toString());
-    line.setAttribute("index-b", componentB.index.toString());
+    line.setAttribute("index-a", indexA.toString());
+    line.setAttribute("index-b", indexB.toString());
     svg.appendChild(line);
 }
 export function removeConnections(index) {

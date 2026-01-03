@@ -14,6 +14,11 @@ export class ip {
     isHostIP() {
         return this.octets[3] === 0;
     }
+    getHostPart() {
+        var clone = this.clone();
+        clone.modifyOctet(3, 0);
+        return new ip(clone.toString());
+    }
     /**
      * Checks if all octets except the last one equal eachother.\
      * Because all networks use a /24 subnetmask the network addr is always has a 0 in the 4th octet.\
@@ -93,40 +98,40 @@ export class Network {
     hostIp;
     numDevices;
     networkDevices;
-    constructor(ip) {
+    router;
+    constructor(ip, router) {
         this.subnet = 24;
         this.modifyOctet = 3; // 24(host-bits)/8(size of a octet)
         this.hostIp = ip;
         this.numDevices = 0;
-        //holds devices in terms of their IPs and indexes into the komponenten array
         this.networkDevices = new Map();
+        this.router = router;
     }
-    addDevice(index) {
+    /**
+     *
+     * doesn't correctly handle removal of comps yet if a device is removed that isn't at pos len-1
+     * the next added device will be assigned the same ip as the current top(len-1) position
+     * @param index
+     * @returns
+     */
+    addDevice(component) {
         // check if network is full
         // 32 - subnet gives the number of host bits
         // 2^hostbits - 2 gives the number of usable addresses (we subtract 2 for network and broadcast addresses)
         if (this.numDevices === Math.pow(2, 32 - this.subnet) - 2) {
             console.error("Network full");
-            return null;
-        }
-        if (index < 0) {
-            console.error("index can't be below 0", index);
+            return false;
         }
         this.numDevices++;
         let newIp = this.hostIp.clone();
         newIp.modifyOctet(this.modifyOctet, this.hostIp.octets[this.modifyOctet] + this.numDevices);
-        this.networkDevices.set(newIp, index);
-        return newIp;
+        component.ipAddress = newIp;
+        this.networkDevices.set(newIp, component);
+        return true;
     }
     removeDevice(ip) {
-        this.networkDevices.delete(ip);
         this.numDevices--;
-    }
-    getDevice(ip) {
-        return this.networkDevices.get(ip);
-    }
-    static NewBaseNetwork() {
-        return new Network(new ip("192.168.0.0"));
+        this.networkDevices.delete(ip);
     }
 }
 export class Komponent {
