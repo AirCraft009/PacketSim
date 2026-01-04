@@ -135,19 +135,13 @@ export class Network {
     }
 }
 export class Komponent {
-    cell;
     type;
     connections;
-    index;
     ipAddress;
-    standardGateway;
-    constructor(cell, type, index, ipAddress, standardGateway) {
-        this.cell = cell;
+    constructor(type, ipAddress) {
         this.type = type;
         this.connections = new Set();
-        this.index = index;
         this.ipAddress = ipAddress;
-        this.standardGateway = standardGateway;
     }
     updateIpAddress(newIp) {
         this.ipAddress = newIp;

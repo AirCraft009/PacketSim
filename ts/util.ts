@@ -1,4 +1,4 @@
-import { Komponent } from "./network.js";
+import { ip } from "./network.js";
 
 const svg : any = document.getElementById("overlay");
 
@@ -37,4 +37,23 @@ export function removeConnections(index: number) {
   line.forEach((e: Element) => {
     svg.removeChild(e);
   });
+}
+
+export function checkValidRouterIP(routerIp: string | null) : boolean {
+    if (!routerIp) {
+        alert("No IP entered removing router");
+        return false;
+    }
+
+    if (!ip.checkValidIpString(routerIp )) {
+        alert("Invalid IP adress entered removing router");
+        return false;
+    }
+    const ipAdress = new ip(routerIp);
+    if (!ipAdress.isHostIP()){
+        alert("All router IP's must end in 0 as they are Network IP's");
+        return false;
+    }
+
+    return true;
 }

@@ -1,4 +1,6 @@
 import * as Utils from "./util.js";
+import * as Core from "./core.js";
+import * as Network from "./network.js";
 const grid = document.getElementById("grid");
 const modalEl = document.getElementById('textModal');
 const modal = new bootstrap.Modal(modalEl);
@@ -7,6 +9,8 @@ var connStartCell = null;
 var connStartIndex = 0;
 var selected = false;
 var draggedTemplate = null;
+const indexToIpMap = new Map();
+const coreState = new Core.CoreState();
 // default state for the editor on the right
 // also used for rendering new information
 const state = {
@@ -52,8 +56,8 @@ function handleMouseClick(cell, i) {
         if (hasChild(cell)) {
             // right click to remove component
             if (e.button == 2) {
-                clearCell(i, cell);
-                //TODO: remove device from CoreState
+                removeVisual(i, cell);
+                coreState.removeComponent(indexToIpMap.get(i));
             }
             // left click to connect components
             if (e.button == 0) {
@@ -91,7 +95,16 @@ function dropListener(cell, index) {
         const clone = draggedTemplate.cloneNode(true);
         removeAtrributesFromClone(clone);
         cell.appendChild(clone);
-        //TODO: add component to CoreState
+        if (draggedTemplate.dataset.type === "router") {
+            getRouterIpModal().then((ipString) => {
+                if (coreState.addRouter(ipString)) {
+                    // ipString is guaranteed to be non-null and valid inside addRouter
+                    indexToIpMap.set(index, new Network.ip(ipString));
+                }
+                removeVisual(index, cell);
+            });
+        }
+        coreState.addComponent(draggedTemplate.dataset.type);
     });
 }
 function resetHighlight() {
@@ -99,10 +112,6 @@ function resetHighlight() {
         return;
     connStartCell.style.backgroundColor = "";
     selected = false;
-}
-//TODO: rewrite this function to be visual
-function clearCell(index, cell) {
-    removeVisual(index, cell);
 }
 function removeVisual(i, cell) {
     // remove the picture

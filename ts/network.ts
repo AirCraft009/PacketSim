@@ -112,7 +112,10 @@ export class Network {
     hostIp: ip;
     numDevices: number
     networkDevices: Map<ip, Komponent>;
+    travelNodes: Array<TransactionNode>;
+    dijkstraNodes: Array<Node>;
     router : Komponent;
+
 
     constructor(ip: ip, router: Komponent) {
         this.subnet = 24;
@@ -121,6 +124,8 @@ export class Network {
         this.numDevices = 0;
         this.networkDevices = new Map();
         this.router = router;
+        this.travelNodes = new Array();
+        this.dijkstraNodes = new Array();
     }
 
     /**
@@ -153,27 +158,66 @@ export class Network {
         this.numDevices--;
         this.networkDevices.delete(ip);
     }
+
+    connectToRemoteRouter(targetRouterIp: ip){
+        this.
+    }
+}
+
+class nummberGenerator {
+    static currentId = 0;
+
+    static getNextId() {
+        return this.currentId++;
+    }
 }
 
 export class Komponent {
-    cell : any;
     type : string;
-    connections : Set<number>;
-    index : number;
+    connections : Set<ip>;
     ipAddress : ip;
-    standardGateway : ip;
+    id: number;
 
 
-  constructor(cell : any, type: string, index: number, ipAddress: ip, standardGateway : ip) {
-    this.cell = cell;
+  constructor(type: string, ipAddress: ip) {
     this.type = type;
     this.connections = new Set();
-    this.index = index;
     this.ipAddress = ipAddress;
-    this.standardGateway = standardGateway;
+    this.id = nummberGenerator.getNextId();
   }
 
   updateIpAddress(newIp: ip) {
     this.ipAddress = newIp;
   }
 };
+
+/**
+ * Node class for Dijkstra's algorithm
+ */
+class Node {
+    id : ip;
+    previous : Node | null;
+    distance : number;
+
+    constructor(id : ip){
+        this.id = id;
+        this.previous = null;
+        this.distance = -1;
+    }
+}
+
+
+/**
+ * Node class for Router table
+ * travel is the node the packet should be sent to next
+ */
+class TransactionNode {
+    id : ip;
+    distance : number;
+    travel : Node;
+    constructor(id : ip, distance : number, travel : number){
+        this.id = id;
+        this.distance = distance;
+        this.travel = travel;
+    }
+}

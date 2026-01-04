@@ -1,4 +1,5 @@
 import * as Utils from "./util.js"
+import * as Core from "./core.js";
 import * as Network from "./network.js";
 
 // force types for bootstrap elements to be any
@@ -14,6 +15,8 @@ var connStartCell: HTMLElement | null = null;
 var connStartIndex: number = 0;
 var selected = false;
 var draggedTemplate: HTMLElement | null = null;
+const indexToIpMap: Map<number, Network.ip> = new Map();
+const coreState = new Core.CoreState();
 
 // default state for the editor on the right
 // also used for rendering new information
@@ -76,8 +79,8 @@ function handleMouseClick(cell: HTMLElement, i: number) {
     if (hasChild(cell)) {
       // right click to remove component
       if (e.button == 2) {
-        clearCell(i, cell);
-        //TODO: remove device from CoreState
+        removeVisual(i, cell);
+        coreState.removeComponent(indexToIpMap.get(i)!);
       }
       // left click to connect components
       if (e.button == 0) {
@@ -123,9 +126,17 @@ function dropListener(cell: HTMLElement, index: number) {
     removeAtrributesFromClone(clone);
     cell.appendChild(clone);
 
+    if(draggedTemplate.dataset.type === "router") {
+      getRouterIpModal().then((ipString) => {
+        if(coreState.addRouter(ipString)) {
+          // ipString is guaranteed to be non-null and valid inside addRouter
+          indexToIpMap.set(index, new Network.ip(ipString as string));
+        }
+        removeVisual(index, cell);
+      });
+    }
 
-    //TODO: add component to CoreState
-
+    coreState.addComponent(draggedTemplate.dataset.type as string);
   });
 }
 
@@ -133,11 +144,6 @@ function resetHighlight() {
   if (connStartCell == null) return;
   connStartCell.style.backgroundColor = "";
   selected = false;
-}
-
-
-function clearCell(index: number, cell: HTMLElement) {
-  removeVisual(index, cell);
 }
 
 function removeVisual(i : number, cell : HTMLElement) {
@@ -161,65 +167,11 @@ function connectComponents(i: number, cell: HTMLElement) {
   connectingMode = true;
 }
 
-//TODO: rewrite this function to use CoreState
-/**
- * Takes in a component and check if it's a router\
- * Depending on that it then aranges it into a network accordingly\
- * It will be in the standard network and it needs a new ip adress\
- * @param {a newly added network komponent} komponent 
-function manageNetwork(komponent: Network.Komponent) {
-  if (komponent.type !== "router") {
-    return;
-  }
-
-  networks[0].removeDevice(komponent.ipAddress);
-  // ask user for ip adress via modal
-  getRouterIpModal().then((ipString) => {
-    if (!ipString) {
-      alert("No IP entered removing router");
-      removeComponent(komponent);
-      return;
-    }
-
-    if (!Network.ip.checkValidIpString(ipString as string)) {
-      alert("Invalid IP adress entered removing router");
-      removeComponent(komponent);
-      return;
-    }
-    const ipAdress = new Network.ip(ipString as string);
-    if (!ipAdress.isHostIP()){
-      alert("All router IP's must end in 0 as they are Network IP's");
-      removeComponent(komponent);
-      return;
-    }
-    networks.forEach((network) => {
-
-      if (ipAdress.equalsHost(network.hostIp)) {
-        alert("Host part of IP already in use for other Network")
-        removeComponent(komponent);
-        return;
-      }
-    })
-    komponent.updateIpAddress(ipAdress);
-    komponent.standardGateway = ipAdress;
-    // create a new network for this router
-    const newNetwork = new Network.Network(ipAdress);
-    networks.push(newNetwork);
-    return;
-  })
-  .catch((error) => {
-    console.error("Error getting IP from modal:", error);
-    removeComponent(komponent);
-    return;
-  });
-}
-*/
-
 /**
  * Asks the user for an IP address via a modal.
  * @returns The ip that was entered into the modal
  */
-function getRouterIpModal() {
+function getRouterIpModal() : Promise<string | null> {
   // return a promise that resolves when the modal form is submitted
   //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
   return new Promise(resolve => {
@@ -367,7 +319,6 @@ function changeComponentNetwork(networkComp : Network.Komponent, routerComp : Ne
 }
    */
 
-//TODO make new way to keep track of connection start and end
 function isvalidConnection(fromindex: number, toindex: number) {
   if (connectingMode) {
     // check for connection to self
