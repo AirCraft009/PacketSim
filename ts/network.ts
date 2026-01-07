@@ -13,15 +13,15 @@ export class ip {
         this.constructOctets(ip);
     }
 
-    isNull(ip: ip) {
-        return ip.octets.every(octet => octet === 0);
+    isNull() {
+        return this.octets.every(octet => octet === 0);
     }
 
-    isHostIP() {
+    isNetworkIP() {
         return this.octets[3] === 0;
     }
 
-    getHostPart() {
+    getNetworkPart() {
         var clone = this.clone();
         clone.modifyOctet(3, 0);
         return new ip(clone.toString());
@@ -101,6 +101,46 @@ export class ip {
 
 }
 
+class NextMacAddr{
+    static byte_4: number = 0;
+    static byte_5: number = 0;
+    static byte_6: number = 0;
+
+    static getNextMacAddr() : Array<number>{
+        if (this.byte_6 === 255){
+            this.byte_6 = 0;
+            if (this.byte_5 === 255){
+                this.byte_5 = 0;
+                //byte 4 cannot possibly overflow in our usecase
+                this.byte_4++;
+            } else {
+                this.byte_5++;
+            }
+        } else {
+            this.byte_6++;
+        }
+        return [this.byte_4, this.byte_5, this.byte_6];
+    }
+}
+
+export class macAddress {
+    prefix: Array<number>;
+    specific: Array<number>;
+
+    constructor() {
+        this.prefix = [0x00, 0x07, 0xE9];
+        this.specific = NextMacAddr.getNextMacAddr();
+    }
+    toString() : string {
+        const fullMac = this.prefix.concat(this.specific);
+        return fullMac.map(byte => byte.toString(16).padStart(2, '0')).join(':');
+    }
+
+    equals(mac: macAddress) : boolean {
+        return this.specific.every((value, index) => value === mac.specific[index]);
+    }
+}
+
 export class Network {
     /**
      * 
@@ -109,23 +149,25 @@ export class Network {
      */
     subnet: number;
     modifyOctet: number
-    hostIp: ip;
+    networkIp: ip;
     numDevices: number
-    networkDevices: Map<ip, Komponent>;
-    travelNodes: Array<TransactionNode>;
-    dijkstraNodes: Array<Node>;
+    // map of mac addresses to components in the network
+    networkDevices: Map<string, Komponent>;
+    travelNodes: Array<TravelNodes>;
     router : Komponent;
-
+    arpTable : Map<string, string>; //map of ip string to mac address string
+    
+    
 
     constructor(ip: ip, router: Komponent) {
         this.subnet = 24;
         this.modifyOctet = 3 // 24(host-bits)/8(size of a octet)
-        this.hostIp = ip;
+        this.networkIp = ip;
         this.numDevices = 0;
         this.networkDevices = new Map();
         this.router = router;
         this.travelNodes = new Array();
-        this.dijkstraNodes = new Array();
+        this.arpTable = new Map();
     }
 
     /**
@@ -145,77 +187,111 @@ export class Network {
         }
         
         this.numDevices++;
-        let newIp = this.hostIp.clone();
-        newIp.modifyOctet(this.modifyOctet, this.hostIp.octets[this.modifyOctet] + this.numDevices);
+        let newIp = this.networkIp.clone();
+        newIp.modifyOctet(this.modifyOctet, this.networkIp.octets[this.modifyOctet] + this.numDevices);
         component.ipAddress = newIp;
-        this.networkDevices.set(newIp, component);
+        component.inNetwork = true;
+        this.networkDevices.set(component.macAddress.toString(), component);
+
+        this.arpTable.set(newIp.toString(), component.macAddress.toString());
         return true;
     }
 
     
 
-    removeDevice(ip: ip) {
-        this.numDevices--;
-        this.networkDevices.delete(ip);
+    removeDevice(macAddress: string) {
+        var ipComp = this.networkDevices.get(macAddress);
+        if(this.networkDevices.delete(macAddress)) {
+            this.numDevices--;
+            this.arpTable.delete(ipComp!.ipAddress.toString());
+        };
     }
 
-    connectToRemoteRouter(targetRouterIp: ip){
-        this.
+    isRouterof(komponentMac: string) : boolean {
+        return this.router.macAddress.toString() === komponentMac;
+    }
+
+    destroyNetwork() : IterableIterator<[string, Komponent]> {
+        // reset all components in the network to unconnected state
+        this.networkDevices.forEach((component) => {
+            component.inNetwork = false;
+            component.ipAddress = new ip("0.0.0.0");
+            component.connections.delete(this.router.ipAddress.toString());
+        });
+
+        return this.networkDevices.entries();
+    }
+
+    sendPacket(fromDevice: string, toIp: string, data: string) : boolean {
+        // handle packet sending in local network
+
+        var toMac = this.arpTable.get(toIp);
+        if (toMac === undefined) {
+            // destination ip outside of local network
+            //TODO: handle routing via router
+            return false;
+        }
+
+        var toDevice = this.networkDevices.get(toMac);
+        if (toDevice === undefined) {
+            return false;
+        }
+
+        toDevice.receiveAndHandlePacket(fromDevice, toIp, data);
+        console.log(`Packet sent from ${fromDevice} to ${toDevice.macAddress.toString()} with data: ${data}`);
+        return true;
     }
 }
 
-class nummberGenerator {
-    static currentId = 0;
-
-    static getNextId() {
-        return this.currentId++;
-    }
-}
 
 export class Komponent {
     type : string;
-    connections : Set<ip>;
+    connections : Set<string>;
     ipAddress : ip;
-    id: number;
+    macAddress: macAddress;
+    inNetwork: boolean;
 
 
   constructor(type: string, ipAddress: ip) {
     this.type = type;
     this.connections = new Set();
     this.ipAddress = ipAddress;
-    this.id = nummberGenerator.getNextId();
+    this.macAddress = new macAddress();
+    this.inNetwork = type === "router";
   }
 
-  updateIpAddress(newIp: ip) {
-    this.ipAddress = newIp;
+  receiveAndHandlePacket(fromMac: string, toIp: string, data: string) : [string, string, string] | null {
+    //TODO: implement packet handling and return a simple echo response back to the sender
+    return [fromMac, toIp, data];
   }
+
 };
 
 /**
  * Node class for Dijkstra's algorithm
  */
-class Node {
-    id : ip;
-    previous : Node | null;
+export class DijkstraNode {
+    id : string;
+    previous : DijkstraNode | null;
+    // right now all distances are equal so this is just a placeholder
     distance : number;
 
-    constructor(id : ip){
+    constructor(id : string){
         this.id = id;
         this.previous = null;
         this.distance = -1;
     }
 }
 
-
 /**
  * Node class for Router table
  * travel is the node the packet should be sent to next
  */
-class TransactionNode {
+class TravelNodes {
     id : ip;
     distance : number;
-    travel : Node;
-    constructor(id : ip, distance : number, travel : number){
+    travel : DijkstraNode;
+    constructor(id : ip, distance : number, travel : DijkstraNode) {
         this.id = id;
         this.distance = distance;
         this.travel = travel;

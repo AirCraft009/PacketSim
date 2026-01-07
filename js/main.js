@@ -1,6 +1,5 @@
 import * as Utils from "./util.js";
 import * as Core from "./core.js";
-import * as Network from "./network.js";
 const grid = document.getElementById("grid");
 const modalEl = document.getElementById('textModal');
 const modal = new bootstrap.Modal(modalEl);
@@ -9,7 +8,7 @@ var connStartCell = null;
 var connStartIndex = 0;
 var selected = false;
 var draggedTemplate = null;
-const indexToIpMap = new Map();
+const indexToMacMap = new Map();
 const coreState = new Core.CoreState();
 // default state for the editor on the right
 // also used for rendering new information
@@ -57,11 +56,14 @@ function handleMouseClick(cell, i) {
             // right click to remove component
             if (e.button == 2) {
                 removeVisual(i, cell);
-                coreState.removeComponent(indexToIpMap.get(i));
+                coreState.removeComponent(indexToMacMap.get(i));
             }
             // left click to connect components
             if (e.button == 0) {
                 connectComponents(i, cell);
+            }
+            if (e.button == 1) {
+                coreState.SendPacket(indexToMacMap.get(i), "192.168.0.3", "Hello, World!");
             }
             highlightCell();
         }
@@ -97,14 +99,16 @@ function dropListener(cell, index) {
         cell.appendChild(clone);
         if (draggedTemplate.dataset.type === "router") {
             getRouterIpModal().then((ipString) => {
-                if (coreState.addRouter(ipString)) {
-                    // ipString is guaranteed to be non-null and valid inside addRouter
-                    indexToIpMap.set(index, new Network.ip(ipString));
+                var routerMac = coreState.addRouter(ipString);
+                if (routerMac !== false) {
+                    indexToMacMap.set(index, routerMac.toString());
+                    return;
                 }
                 removeVisual(index, cell);
             });
+            return;
         }
-        coreState.addComponent(draggedTemplate.dataset.type);
+        indexToMacMap.set(index, coreState.addComponent(draggedTemplate.dataset.type).toString());
     });
 }
 function resetHighlight() {
@@ -132,59 +136,6 @@ function connectComponents(i, cell) {
     connStartIndex = i;
     connectingMode = true;
 }
-//TODO: rewrite this function to use CoreState
-/**
- * Takes in a component and check if it's a router\
- * Depending on that it then aranges it into a network accordingly\
- * It will be in the standard network and it needs a new ip adress\
- * @param {a newly added network komponent} komponent
-function manageNetwork(komponent: Network.Komponent) {
-  if (komponent.type !== "router") {
-    return;
-  }
-
-  networks[0].removeDevice(komponent.ipAddress);
-  // ask user for ip adress via modal
-  getRouterIpModal().then((ipString) => {
-    if (!ipString) {
-      alert("No IP entered removing router");
-      removeComponent(komponent);
-      return;
-    }
-
-    if (!Network.ip.checkValidIpString(ipString as string)) {
-      alert("Invalid IP adress entered removing router");
-      removeComponent(komponent);
-      return;
-    }
-    const ipAdress = new Network.ip(ipString as string);
-    if (!ipAdress.isHostIP()){
-      alert("All router IP's must end in 0 as they are Network IP's");
-      removeComponent(komponent);
-      return;
-    }
-    networks.forEach((network) => {
-
-      if (ipAdress.equalsHost(network.hostIp)) {
-        alert("Host part of IP already in use for other Network")
-        removeComponent(komponent);
-        return;
-      }
-    })
-    komponent.updateIpAddress(ipAdress);
-    komponent.standardGateway = ipAdress;
-    // create a new network for this router
-    const newNetwork = new Network.Network(ipAdress);
-    networks.push(newNetwork);
-    return;
-  })
-  .catch((error) => {
-    console.error("Error getting IP from modal:", error);
-    removeComponent(komponent);
-    return;
-  });
-}
-*/
 /**
  * Asks the user for an IP address via a modal.
  * @returns The ip that was entered into the modal
@@ -257,15 +208,12 @@ function openEditBox() {
     renderEditBox();
 }
 function updateState() {
-    // TODO: get component from CoreState
-    /*
-    state.ip = komponent.ipAddress.toString();
-    state.type = komponent.type;
-    state.connection = (komponent.connections.size).toString();
-    //TODO: Implement MAC-Adress
-    // state.mac = komponent.macAddress;
-    state.gateway = komponent.standardGateway.toString();
-    */
+    var componentState = coreState.getStateOfComponent(indexToMacMap.get(connStartIndex));
+    state.type = componentState[0];
+    state.ip = componentState[1];
+    state.mac = componentState[2];
+    state.connection = componentState[3];
+    state.gateway = componentState[4];
 }
 // renders new information to the edit box
 function renderEditBox() {
@@ -286,8 +234,7 @@ function highlightCell() {
 function addConnection(cell, index) {
     // connstartCell was alr checked for null before calling this function
     Utils.drawLine(connStartCell, cell, connStartIndex, index);
-    // TODO: update CoreState connections
-    //TODO: chenge network of connected component and get new ip from router network of CoreState
+    coreState.connectComponents(indexToMacMap.get(connStartIndex), indexToMacMap.get(index));
 }
 //TODO: rewrite this function to use CoreState
 /**
@@ -312,15 +259,16 @@ function changeComponentNetwork(networkComp : Network.Komponent, routerComp : Ne
   networkComp.ipAddress = ip;
 }
    */
-//TODO make new way to keep track of connection start and end
 function isvalidConnection(fromindex, toindex) {
     if (connectingMode) {
         // check for connection to self
         if (fromindex == toindex)
             return false;
         // check if connection already exists
-        //TODO query CoreState for existing connections
-        return true;
+        if (indexToMacMap.get(fromindex) === undefined || indexToMacMap.get(toindex) === undefined) {
+            return false;
+        }
+        return !coreState.alreadyConnected(indexToMacMap.get(fromindex), indexToMacMap.get(toindex));
     }
     return false;
 }

@@ -8,13 +8,13 @@ export class ip {
         this.octets = [];
         this.constructOctets(ip);
     }
-    isNull(ip) {
-        return ip.octets.every(octet => octet === 0);
+    isNull() {
+        return this.octets.every(octet => octet === 0);
     }
-    isHostIP() {
+    isNetworkIP() {
         return this.octets[3] === 0;
     }
-    getHostPart() {
+    getNetworkPart() {
         var clone = this.clone();
         clone.modifyOctet(3, 0);
         return new ip(clone.toString());
@@ -87,6 +87,43 @@ export class ip {
         return true;
     }
 }
+class NextMacAddr {
+    static byte_4 = 0;
+    static byte_5 = 0;
+    static byte_6 = 0;
+    static getNextMacAddr() {
+        if (this.byte_6 === 255) {
+            this.byte_6 = 0;
+            if (this.byte_5 === 255) {
+                this.byte_5 = 0;
+                //byte 4 cannot possibly overflow in our usecase
+                this.byte_4++;
+            }
+            else {
+                this.byte_5++;
+            }
+        }
+        else {
+            this.byte_6++;
+        }
+        return [this.byte_4, this.byte_5, this.byte_6];
+    }
+}
+export class macAddress {
+    prefix;
+    specific;
+    constructor() {
+        this.prefix = [0x00, 0x07, 0xE9];
+        this.specific = NextMacAddr.getNextMacAddr();
+    }
+    toString() {
+        const fullMac = this.prefix.concat(this.specific);
+        return fullMac.map(byte => byte.toString(16).padStart(2, '0')).join(':');
+    }
+    equals(mac) {
+        return this.specific.every((value, index) => value === mac.specific[index]);
+    }
+}
 export class Network {
     /**
      *
@@ -95,17 +132,22 @@ export class Network {
      */
     subnet;
     modifyOctet;
-    hostIp;
+    networkIp;
     numDevices;
+    // map of mac addresses to components in the network
     networkDevices;
+    travelNodes;
     router;
+    arpTable; //map of ip string to mac address string
     constructor(ip, router) {
         this.subnet = 24;
         this.modifyOctet = 3; // 24(host-bits)/8(size of a octet)
-        this.hostIp = ip;
+        this.networkIp = ip;
         this.numDevices = 0;
         this.networkDevices = new Map();
         this.router = router;
+        this.travelNodes = new Array();
+        this.arpTable = new Map();
     }
     /**
      *
@@ -123,28 +165,95 @@ export class Network {
             return false;
         }
         this.numDevices++;
-        let newIp = this.hostIp.clone();
-        newIp.modifyOctet(this.modifyOctet, this.hostIp.octets[this.modifyOctet] + this.numDevices);
+        let newIp = this.networkIp.clone();
+        newIp.modifyOctet(this.modifyOctet, this.networkIp.octets[this.modifyOctet] + this.numDevices);
         component.ipAddress = newIp;
-        this.networkDevices.set(newIp, component);
+        component.inNetwork = true;
+        this.networkDevices.set(component.macAddress.toString(), component);
+        this.arpTable.set(newIp.toString(), component.macAddress.toString());
         return true;
     }
-    removeDevice(ip) {
-        this.numDevices--;
-        this.networkDevices.delete(ip);
+    removeDevice(macAddress) {
+        var ipComp = this.networkDevices.get(macAddress);
+        if (this.networkDevices.delete(macAddress)) {
+            this.numDevices--;
+            this.arpTable.delete(ipComp.ipAddress.toString());
+        }
+        ;
+    }
+    isRouterof(komponentMac) {
+        return this.router.macAddress.toString() === komponentMac;
+    }
+    destroyNetwork() {
+        // reset all components in the network to unconnected state
+        this.networkDevices.forEach((component) => {
+            component.inNetwork = false;
+            component.ipAddress = new ip("0.0.0.0");
+            component.connections.delete(this.router.ipAddress.toString());
+        });
+        return this.networkDevices.entries();
+    }
+    sendPacket(fromDevice, toIp, data) {
+        // handle packet sending in local network
+        var toMac = this.arpTable.get(toIp);
+        if (toMac === undefined) {
+            // destination ip outside of local network
+            //TODO: handle routing via router
+            return false;
+        }
+        var toDevice = this.networkDevices.get(toMac);
+        if (toDevice === undefined) {
+            return false;
+        }
+        toDevice.receiveAndHandlePacket(fromDevice, toIp, data);
+        console.log(`Packet sent from ${fromDevice} to ${toDevice.macAddress.toString()} with data: ${data}`);
+        return true;
     }
 }
 export class Komponent {
     type;
     connections;
     ipAddress;
+    macAddress;
+    inNetwork;
     constructor(type, ipAddress) {
         this.type = type;
         this.connections = new Set();
         this.ipAddress = ipAddress;
+        this.macAddress = new macAddress();
+        this.inNetwork = type === "router";
     }
-    updateIpAddress(newIp) {
-        this.ipAddress = newIp;
+    receiveAndHandlePacket(fromMac, toIp, data) {
+        //TODO: implement packet handling and return a simple echo response back to the sender
+        return [fromMac, toIp, data];
     }
 }
 ;
+/**
+ * Node class for Dijkstra's algorithm
+ */
+export class DijkstraNode {
+    id;
+    previous;
+    // right now all distances are equal so this is just a placeholder
+    distance;
+    constructor(id) {
+        this.id = id;
+        this.previous = null;
+        this.distance = -1;
+    }
+}
+/**
+ * Node class for Router table
+ * travel is the node the packet should be sent to next
+ */
+class TravelNodes {
+    id;
+    distance;
+    travel;
+    constructor(id, distance, travel) {
+        this.id = id;
+        this.distance = distance;
+        this.travel = travel;
+    }
+}

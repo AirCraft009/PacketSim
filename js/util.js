@@ -39,7 +39,7 @@ export function checkValidRouterIP(routerIp) {
         return false;
     }
     const ipAdress = new ip(routerIp);
-    if (!ipAdress.isHostIP()) {
+    if (!ipAdress.isNetworkIP()) {
         alert("All router IP's must end in 0 as they are Network IP's");
         return false;
     }

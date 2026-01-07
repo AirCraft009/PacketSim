@@ -15,7 +15,7 @@ var connStartCell: HTMLElement | null = null;
 var connStartIndex: number = 0;
 var selected = false;
 var draggedTemplate: HTMLElement | null = null;
-const indexToIpMap: Map<number, Network.ip> = new Map();
+const indexToMacMap: Map<number, string> = new Map();
 const coreState = new Core.CoreState();
 
 // default state for the editor on the right
@@ -80,11 +80,15 @@ function handleMouseClick(cell: HTMLElement, i: number) {
       // right click to remove component
       if (e.button == 2) {
         removeVisual(i, cell);
-        coreState.removeComponent(indexToIpMap.get(i)!);
+        coreState.removeComponent(indexToMacMap.get(i)!);
       }
       // left click to connect components
       if (e.button == 0) {
         connectComponents(i, cell);
+      }
+
+      if (e.button == 1) {
+        coreState.SendPacket(indexToMacMap.get(i)!, "192.168.0.3", "Hello, World!");
       }
       highlightCell();
     }
@@ -128,15 +132,17 @@ function dropListener(cell: HTMLElement, index: number) {
 
     if(draggedTemplate.dataset.type === "router") {
       getRouterIpModal().then((ipString) => {
-        if(coreState.addRouter(ipString)) {
-          // ipString is guaranteed to be non-null and valid inside addRouter
-          indexToIpMap.set(index, new Network.ip(ipString as string));
+        var routerMac = coreState.addRouter(ipString);
+        if(routerMac !== false) {
+          indexToMacMap.set(index, routerMac.toString());
+          return;
         }
         removeVisual(index, cell);
       });
+      return;
     }
 
-    coreState.addComponent(draggedTemplate.dataset.type as string);
+    indexToMacMap.set(index, coreState.addComponent(draggedTemplate.dataset.type as string).toString());
   });
 }
 
@@ -254,15 +260,12 @@ function openEditBox() {
 }
 
 function updateState() {
-  // TODO: get component from CoreState
-  /*
-  state.ip = komponent.ipAddress.toString();
-  state.type = komponent.type;
-  state.connection = (komponent.connections.size).toString();
-  //TODO: Implement MAC-Adress 
-  // state.mac = komponent.macAddress;
-  state.gateway = komponent.standardGateway.toString();
-  */
+  var componentState = coreState.getStateOfComponent(indexToMacMap.get(connStartIndex)!);
+  state.type = componentState[0];
+  state.ip = componentState[1];
+  state.mac = componentState[2];
+  state.connection = componentState[3]; 
+  state.gateway = componentState[4];
 }
 
 
@@ -288,10 +291,7 @@ function highlightCell() {
 function addConnection(cell: HTMLElement, index: number) {
   // connstartCell was alr checked for null before calling this function
   Utils.drawLine(connStartCell as HTMLElement, cell, connStartIndex, index);
-
-  // TODO: update CoreState connections
-
-  //TODO: chenge network of connected component and get new ip from router network of CoreState
+  coreState.connectComponents(indexToMacMap.get(connStartIndex)!, indexToMacMap.get(index)!);
 }
 
 
@@ -324,10 +324,11 @@ function isvalidConnection(fromindex: number, toindex: number) {
     // check for connection to self
     if (fromindex == toindex) return false;
     // check if connection already exists
+    if(indexToMacMap.get(fromindex) === undefined || indexToMacMap.get(toindex) === undefined) {
+      return false;
+    }
 
-    //TODO query CoreState for existing connections
-
-    return true;
+    return !coreState.alreadyConnected(indexToMacMap.get(fromindex)!, indexToMacMap.get(toindex)!);
   }
   return false;
 }

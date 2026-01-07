@@ -3,15 +3,19 @@ import { checkValidRouterIP } from "./util.js";
 export class CoreState {
     networks;
     unconnectedComponents;
+    logicalNetworkTopology;
+    connectionMap;
     constructor() {
         this.unconnectedComponents = new Map();
         this.networks = new Map();
+        this.logicalNetworkTopology = new Array();
+        this.connectionMap = new Map();
     }
     addComponent(type) {
         // Create a new component with a default IP of
         var component = new Komponent(type, new ip("0.0.0.0"));
-        this.unconnectedComponents.set(component.ipAddress, component);
-        return component.ipAddress;
+        this.unconnectedComponents.set(component.macAddress.toString(), component);
+        return component.macAddress;
     }
     addRouter(ipString) {
         if (!checkValidRouterIP(ipString)) {
@@ -22,19 +26,87 @@ export class CoreState {
         if (this.ipInUseByNetwork(router.ipAddress)) {
             return false;
         }
-        this.networks.set(router.ipAddress, new Network(router.ipAddress, router));
-        return true;
+        this.networks.set(router.ipAddress.toString(), new Network(router.ipAddress, router));
+        return router.macAddress;
     }
-    removeComponent(ipAddress) {
-        this.unconnectedComponents.delete(ipAddress);
-        if (this.networks.delete(ipAddress)) {
-            // if a network was deleted, no need to continue because the device was a router
+    removeComponent(componentMac) {
+        if (this.unconnectedComponents.delete(componentMac)) {
             return;
         }
-        ;
-        this.networks.get(ipAddress.getHostPart())?.removeDevice(ipAddress);
+        this.networks.forEach((network) => {
+            if (network.isRouterof(componentMac)) {
+                this.unconnectedComponents = new Map([...this.unconnectedComponents.entries(), ...network.destroyNetwork()]);
+                this.networks.delete(network.networkIp.toString());
+                return;
+            }
+            network.removeDevice(componentMac);
+        });
     }
     ipInUseByNetwork(ip) {
-        return this.networks.has(ip);
+        return this.networks.has(ip.toString());
+    }
+    alreadyConnected(fromMac, toMac) {
+        if (this.connectionMap.has(fromMac)) {
+            return this.connectionMap.get(fromMac)?.includes(toMac);
+        }
+        if (this.connectionMap.has(toMac)) {
+            return this.connectionMap.get(toMac)?.includes(fromMac);
+        }
+        return false;
+    }
+    getComponentByMac(mac) {
+        if (this.unconnectedComponents.has(mac)) {
+            return this.unconnectedComponents.get(mac);
+        }
+        for (const network of this.networks.values()) {
+            if (network.isRouterof(mac)) {
+                return network.router;
+            }
+            if (network.networkDevices.has(mac)) {
+                return network.networkDevices.get(mac);
+            }
+        }
+        return null;
+    }
+    connectComponents(fromMac, toMac) {
+        // only called after checking if component exists and that theoretical connection is valid
+        if (!this.connectionMap.has(fromMac)) {
+            this.connectionMap.set(fromMac, []);
+        }
+        this.connectionMap.get(fromMac)?.push(toMac);
+        // connect components is only called after checking for existing connections with alreadyConnected and the other checks in 
+        // isvalidConnection so we can assume both components exist and are not already connected
+        var fromComp = this.getComponentByMac(fromMac);
+        var toComp = this.getComponentByMac(toMac);
+        if (fromComp.inNetwork) {
+            var fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString());
+            fromNetwork.addDevice(toComp);
+        }
+        else if (toComp.inNetwork) {
+            var toNetwork = this.networks.get(toComp.ipAddress.getNetworkPart().toString());
+            toNetwork.addDevice(fromComp);
+        }
+    }
+    getStateOfComponent(mac) {
+        var component = this.getComponentByMac(mac);
+        if (component === null) {
+            return [];
+        }
+        return [component.type, component.ipAddress.toString(), component.macAddress.toString(), component.connections.size.toString(), component.ipAddress.getNetworkPart().toString(),];
+    }
+    SendPacket(fromMac, toIp, data) {
+        // get Network of fromMac
+        var fromComp = this.getComponentByMac(fromMac);
+        if (fromComp === null) {
+            console.error("Component not found");
+            return false;
+        }
+        if (!fromComp.inNetwork) {
+            console.error("Component not in a network connect to a router first");
+            return false;
+        }
+        var fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString());
+        fromNetwork.sendPacket(fromMac, toIp, data);
+        return true;
     }
 }
