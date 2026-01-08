@@ -1,4 +1,4 @@
-import { DijkstraNode, ip, Komponent, macAddress, Network } from "./network.js";
+import { DijkstraEdge, DijkstraNode, ip, Komponent, macAddress, Network } from "./network.js";
 import { checkValidRouterIP } from "./util.js";
 
 export class CoreState {
@@ -97,6 +97,12 @@ export class CoreState {
         var fromComp = this.getComponentByMac(fromMac) as Komponent;
         var toComp = this.getComponentByMac(toMac) as Komponent;
 
+        var fromNode = this.logicalNetworkTopology.filter((n) => n.ip.toString() === fromComp.ipAddress.toString())[0];
+        var toNode = this.logicalNetworkTopology.filter((n) => n.ip.toString() === toComp.ipAddress.toString())[0];
+
+        fromNode.outgoingEdges.push(new DijkstraEdge(1, fromNode, toNode))
+        toNode.outgoingEdges.push(new DijkstraEdge(1,toNode, fromNode));
+
         if (fromComp.inNetwork) {
             var fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString()) as Network;
             fromNetwork.addDevice(toComp);
@@ -127,22 +133,76 @@ export class CoreState {
             return false;
         }
 
-        var fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString())!;
-        fromNetwork.sendPacket(fromMac, toIp, data);
-
+        var fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString());
+        if (fromNetwork) {
+            fromNetwork.sendPacket(fromMac, toIp, data, this.makeNetworkMap(fromNetwork.networkIp.toString()));
+            return true;
+        }
         return true;
     }
 
-    calculateLogicalRoutes() {
-        var rootNode = this.logicalNetworkTopology.at(0);
-        if (rootNode === undefined) {
-            return;
+
+    calculateLogicalRoutes(ip: string) : Array<DijkstraNode> {
+        // Create a copy of the logical network topology
+        const copiedTopology = this.logicalNetworkTopology.map(node => ({
+            ip: node.ip,
+            distance: node.distance,
+            previous: node.previous,
+            outgoingEdges: node.outgoingEdges
+        }));
+
+        // Dijkstra's algorithm using a priority queue approach
+        const unvisited = new Set(copiedTopology);
+        let current = copiedTopology.find(n => n.ip === ip);
+        if (current) {
+            current.previous = current;
         }
-        rootNode.distance = 0;
-        rootNode.previous = rootNode;
-        for (var i = 1; i < this.logicalNetworkTopology.length; i++) {
-            var unvisited = this.logicalNetworkTopology[i];
-            
+
+
+        while (unvisited.size > 0 && current) {
+            unvisited.delete(current);
+
+            for (const edge of current.outgoingEdges) {
+                const neighbor = copiedTopology.find(n => n.ip === edge.EndNode.ip);
+                if (neighbor && unvisited.has(neighbor)) {
+                    const newDistance = current.distance + edge.lenght;
+                    if (newDistance < neighbor.distance) {
+                        neighbor.distance = newDistance;
+                        neighbor.previous = current;
+                    }
+                }
+            }
+
+            // Find next unvisited node with minimum distance
+            current = Array.from(unvisited).reduce((min, node) => 
+                node.distance < min.distance ? node : min, 
+                { distance: Infinity } as any
+            );
         }
+
+        return copiedTopology;
+        }
+
+    makeNetworkMap(ip: string) : Map<string, string> {
+        const DijkstraTopology = this.calculateLogicalRoutes(ip);
+        // map of ip to ip
+        const networkMap = new Map<string, string>();
+        for (const node of DijkstraTopology) {
+            if (node.ip === ip) {
+                continue;
+            }
+            var prevNode = node.previous;
+            if (!prevNode) {
+                // a node not connected to the one currently in focus
+                networkMap.set(node.ip, "0.0.0.0");
+                continue;
+            }
+            // prevNode is not null and no prevNodes can be null
+            while (prevNode!.previous!.ip != ip){
+                prevNode = prevNode!.previous;
+            }
+            networkMap.set(node.ip, prevNode!.ip);
+        }
+        return networkMap;
     }
 }

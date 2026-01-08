@@ -156,6 +156,7 @@ export class Network {
     travelNodes: Array<DijkstraNode>;
     router : Komponent;
     arpTable : Map<string, string>; //map of ip string to mac address string
+
     
     
 
@@ -168,6 +169,7 @@ export class Network {
         this.router = router;
         this.travelNodes = new Array();
         this.arpTable = new Map();
+
     }
 
     /**
@@ -222,14 +224,17 @@ export class Network {
         return this.networkDevices.entries();
     }
 
-    sendPacket(fromDevice: string, toIp: string, data: string) : boolean {
+    sendPacket(fromDevice: string, toIp: string, data: string, netMap : Map<string, string>) : boolean {
         // handle packet sending in local network
 
         var toMac = this.arpTable.get(toIp);
         if (toMac === undefined) {
-            // destination ip outside of local network
-            //TODO: handle routing via router
-            return false;
+            var sendIP = netMap.get(toIp);
+            if(!sendIP) {
+                return false;
+            }
+            // send to next Network
+            return true;
         }
 
         var toDevice = this.networkDevices.get(toMac);
@@ -278,11 +283,25 @@ export class DijkstraNode {
     previous : DijkstraNode | null;
     // right now all distances are equal so this is just a placeholder
     distance : number;
+    outgoingEdges: DijkstraEdge[];
 
     constructor(ip : string) {
         this.ip = ip;
         this.previous = null;
         this.distance = -1;
+        this.outgoingEdges = [];
     }
+
 }
 
+export class DijkstraEdge {
+    lenght : number;
+    StartNode : DijkstraNode;
+    EndNode : DijkstraNode;
+
+    constructor(lenght : number, StartNode : DijkstraNode,  EndNode : DijkstraNode) {
+        this.lenght = lenght;
+        this.StartNode = StartNode;
+        this.EndNode = EndNode;
+    }
+}
