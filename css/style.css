@@ -34,3 +34,15 @@ body {
 #target-ip{
   width: 60%;
 }
+
+
+#carousel
+img{
+  width: 600px;
+  height: auto;
+}
+
+#impressum
+{
+  background-color: rgb(175, 175, 175);
+}

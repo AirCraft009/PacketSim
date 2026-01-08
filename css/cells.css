@@ -1,6 +1,6 @@
 :root {
     --cell-size: 40px;
-    --col-count: 8;
+    --col-count: 11;
     --grid-dimension: calc(var(--cell-size) * var(--col-count));
     --grid-icon-size: calc(var(--cell-size) - 4px);
 }
