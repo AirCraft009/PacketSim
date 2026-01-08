@@ -32,6 +32,7 @@ export class CoreState {
         }
 
         this.networks.set(router.ipAddress.toString(), new Network(router.ipAddress, router));
+        this.logicalNetworkTopology.push(new DijkstraNode(router.ipAddress.toString()));
         return router.macAddress;
     }
 
@@ -44,6 +45,7 @@ export class CoreState {
             if(network.isRouterof(componentMac)){
                 this.unconnectedComponents = new Map([...this.unconnectedComponents.entries(), ...network.destroyNetwork()]);
                 this.networks.delete(network.networkIp.toString());
+                this.logicalNetworkTopology = this.logicalNetworkTopology.filter(node => node.ip !== network.networkIp.toString());
                 return;
             }
             network.removeDevice(componentMac);
@@ -129,5 +131,18 @@ export class CoreState {
         fromNetwork.sendPacket(fromMac, toIp, data);
 
         return true;
+    }
+
+    calculateLogicalRoutes() {
+        var rootNode = this.logicalNetworkTopology.at(0);
+        if (rootNode === undefined) {
+            return;
+        }
+        rootNode.distance = 0;
+        rootNode.previous = rootNode;
+        for (var i = 1; i < this.logicalNetworkTopology.length; i++) {
+            var unvisited = this.logicalNetworkTopology[i];
+            
+        }
     }
 }

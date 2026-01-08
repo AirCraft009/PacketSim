@@ -224,6 +224,9 @@ export class Komponent {
         this.inNetwork = type === "router";
     }
     receiveAndHandlePacket(fromMac, toIp, data) {
+        if (this.type !== "server") {
+            return null;
+        }
         //TODO: implement packet handling and return a simple echo response back to the sender
         return [fromMac, toIp, data];
     }

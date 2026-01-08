@@ -153,7 +153,7 @@ export class Network {
     numDevices: number
     // map of mac addresses to components in the network
     networkDevices: Map<string, Komponent>;
-    travelNodes: Array<TravelNodes>;
+    travelNodes: Array<DijkstraNode>;
     router : Komponent;
     arpTable : Map<string, string>; //map of ip string to mac address string
     
@@ -261,6 +261,9 @@ export class Komponent {
   }
 
   receiveAndHandlePacket(fromMac: string, toIp: string, data: string) : [string, string, string] | null {
+    if(this.type !== "server") {
+        return null;
+    }
     //TODO: implement packet handling and return a simple echo response back to the sender
     return [fromMac, toIp, data];
   }
@@ -271,29 +274,15 @@ export class Komponent {
  * Node class for Dijkstra's algorithm
  */
 export class DijkstraNode {
-    id : string;
+    ip : string;
     previous : DijkstraNode | null;
     // right now all distances are equal so this is just a placeholder
     distance : number;
 
-    constructor(id : string){
-        this.id = id;
+    constructor(ip : string) {
+        this.ip = ip;
         this.previous = null;
         this.distance = -1;
     }
 }
 
-/**
- * Node class for Router table
- * travel is the node the packet should be sent to next
- */
-class TravelNodes {
-    id : ip;
-    distance : number;
-    travel : DijkstraNode;
-    constructor(id : ip, distance : number, travel : DijkstraNode) {
-        this.id = id;
-        this.distance = distance;
-        this.travel = travel;
-    }
-}

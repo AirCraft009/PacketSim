@@ -1,5 +1,6 @@
 import * as Utils from "./util.js";
 import * as Core from "./core.js";
+import { ip } from "./network.js";
 const grid = document.getElementById("grid");
 const modalEl = document.getElementById('textModal');
 const modal = new bootstrap.Modal(modalEl);
@@ -62,10 +63,7 @@ function handleMouseClick(cell, i) {
             if (e.button == 0) {
                 connectComponents(i, cell);
             }
-            if (e.button == 1) {
-                coreState.SendPacket(indexToMacMap.get(i), "192.168.0.3", "Hello, World!");
-            }
-            highlightCell();
+            activateEditMode();
         }
     });
 }
@@ -116,6 +114,8 @@ function resetHighlight() {
         return;
     connStartCell.style.backgroundColor = "";
     selected = false;
+    var sendBtn = document.querySelector("button.btn.btn-dark");
+    sendBtn.disabled = true;
 }
 function removeVisual(i, cell) {
     // remove the picture
@@ -224,10 +224,11 @@ function renderEditBox() {
         }
     });
 }
-function highlightCell() {
+function activateEditMode() {
     if (connectingMode && connStartCell != null) {
         connStartCell.style.backgroundColor = "blue";
         selected = true;
+        document.querySelector("button.btn.btn-dark").disabled = false;
         openEditBox();
     }
 }
@@ -236,29 +237,6 @@ function addConnection(cell, index) {
     Utils.drawLine(connStartCell, cell, connStartIndex, index);
     coreState.connectComponents(indexToMacMap.get(connStartIndex), indexToMacMap.get(index));
 }
-//TODO: rewrite this function to use CoreState
-/**
- * Changes the network of the networkComp to the network of the router
- * and gets a new ip from the network of the router
- *
- * @param networkComp a network component connected to the router
- * @param routerComp router that the networkComp is connected to
-
-function changeComponentNetwork(networkComp : Network.Komponent, routerComp : Network.Komponent) {
-  networkComp.standardGateway = routerComp.standardGateway;
-  var routerNetwork = networks.filter(n=> n.hostIp === routerComp.ipAddress)[0];
-  if (routerNetwork === null) {
-    // impossible control path can't be null just for typescript
-    return;
-  }
-  var ip = routerNetwork.addDevice(networkComp.index);
-  if (!ip) {
-    //basically impossible as the 8x8 map doesn't allow for 253 devices
-    return;
-  }
-  networkComp.ipAddress = ip;
-}
-   */
 function isvalidConnection(fromindex, toindex) {
     if (connectingMode) {
         // check for connection to self
@@ -278,4 +256,22 @@ function hasChild(cell) {
         return false;
     }
     return true;
+}
+export function sendPacket() {
+    if (!selected) {
+        return;
+    }
+    const dataInput = document.getElementById("packet-data-input");
+    const targetIpInput = document.getElementById("target-ip-input");
+    const data = dataInput.value;
+    const targetIp = targetIpInput.value;
+    if (!data || !targetIp) {
+        alert("Please enter both packet data and target IP.");
+        return;
+    }
+    if (!ip.checkValidIpString(targetIp)) {
+        alert("Invalid target IP address.");
+        return;
+    }
+    coreState.SendPacket(indexToMacMap.get(connStartIndex), targetIp, data);
 }

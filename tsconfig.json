@@ -4,8 +4,11 @@
     "lib": ["ES2024", "DOM"],
     "rootDir": "ts",
     "outDir": "js",
-    "strict": true
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
   },
   "include": ["ts/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+
 }

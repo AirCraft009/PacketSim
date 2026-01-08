@@ -1,5 +1,5 @@
 import * as main from "./main.js";
-import * as Network from "./network.js";
-console.log(new Network.macAddress().toString());
+document.getElementById("sendPacket-button")
+    .addEventListener("click", main.sendPacket);
 main.InitDocumentListeners();
 main.createGrid(121);
