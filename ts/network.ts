@@ -1,6 +1,7 @@
+export type ip  = string;
+export type mac = string;
 
-
-export class ip {
+export class ipAddress {
     /**
      * 
      * @param {A string in the format 111.111.111.111} ip
@@ -24,7 +25,7 @@ export class ip {
     getNetworkPart() {
         var clone = this.clone();
         clone.modifyOctet(3, 0);
-        return new ip(clone.toString());
+        return new ipAddress(clone.toString());
     }
 
     /**
@@ -34,7 +35,7 @@ export class ip {
      * @param ip 
      * @returns 
      */
-    equalsHost(ip: ip) { 
+    equalsHost(ip: ipAddress) { 
         for (let i = 0; i < this.octets.length-1; i++){
             if (this.octets[i] !== ip.octets[i]){
                 return false;
@@ -48,7 +49,7 @@ export class ip {
      * @param ip  
      * @returns 
      */
-    equals(ip: ip) {
+    equals(ip: ipAddress) {
         for (let i = 0; i < this.octets.length; i++){
             if (this.octets[i] !== ip.octets[i]) {
                 return false;
@@ -57,10 +58,10 @@ export class ip {
         return true;
     }
 
-    constructOctets(ip: string) {
-        var stringOctets = ip.split(".");
+    constructOctets(ipString: string) {
+        var stringOctets = ipString.split(".");
         if (stringOctets.length !== 4) {
-            throw new Error("Invalid ip adress passed:" + ip);
+            throw new Error("Invalid ip adress passed:" + ipString);
         }
         stringOctets.forEach(octet => {
             try{
@@ -84,7 +85,7 @@ export class ip {
     }
 
     clone () {
-        return new ip(this.toString());
+        return new ipAddress(this.toString());
     }
 
     static checkValidIpString(ipString: string): boolean {
@@ -149,7 +150,7 @@ export class Network {
      */
     subnet: number;
     modifyOctet: number
-    networkIp: ip;
+    networkIp: ipAddress;
     numDevices: number
     // map of mac addresses to components in the network
     networkDevices: Map<string, Komponent>;
@@ -160,7 +161,7 @@ export class Network {
     
     
 
-    constructor(ip: ip, router: Komponent) {
+    constructor(ip: ipAddress, router: Komponent) {
         this.subnet = 24;
         this.modifyOctet = 3 // 24(host-bits)/8(size of a octet)
         this.networkIp = ip;
@@ -217,7 +218,7 @@ export class Network {
         // reset all components in the network to unconnected state
         this.networkDevices.forEach((component) => {
             component.inNetwork = false;
-            component.ipAddress = new ip("0.0.0.0");
+            component.ipAddress = new ipAddress("0.0.0.0");
             component.connections.delete(this.router.ipAddress.toString());
         });
 
@@ -252,12 +253,12 @@ export class Network {
 export class Komponent {
     type : string;
     connections : Set<string>;
-    ipAddress : ip;
+    ipAddress : ipAddress;
     macAddress: macAddress;
     inNetwork: boolean;
 
 
-  constructor(type: string, ipAddress: ip) {
+  constructor(type: string, ipAddress: ipAddress) {
     this.type = type;
     this.connections = new Set();
     this.ipAddress = ipAddress;

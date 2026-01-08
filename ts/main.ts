@@ -1,6 +1,6 @@
 import * as Utils from "./util.js"
 import * as Core from "./core.js";
-import { ip } from "./network.js";
+import { ipAddress, mac } from "./network.js";
 
 
 
@@ -17,7 +17,7 @@ var connStartCell: HTMLElement | null = null;
 var connStartIndex: number = 0;
 var selected = false;
 var draggedTemplate: HTMLElement | null = null;
-const indexToMacMap: Map<number, string> = new Map();
+const indexToMacMap: Map<number, mac> = new Map();
 const coreState = new Core.CoreState();
 
 // default state for the editor on the right
@@ -335,7 +335,7 @@ export function sendPacket() {
     return;
   }
 
-  if (!ip.checkValidIpString(targetIp)) {
+  if (!ipAddress.checkValidIpString(targetIp)) {
     alert("Invalid target IP address.");
     return;
   }
