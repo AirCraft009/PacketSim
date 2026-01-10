@@ -270,7 +270,7 @@ export class DijkstraNode {
     constructor(ip) {
         this.ip = ip;
         this.previous = null;
-        this.distance = -1;
+        this.distance = Infinity;
         this.outgoingEdges = [];
     }
 }
