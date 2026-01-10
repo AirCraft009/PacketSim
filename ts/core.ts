@@ -232,7 +232,7 @@ export class CoreState {
             while (prevNode!.previous!.ip !== ip){
                 prevNode = prevNode!.previous;
             }
-            networkMap.set(node.ip, node.ip);
+            networkMap.set(node.ip, prevNode!.ip);
         }
         return networkMap;
     }
