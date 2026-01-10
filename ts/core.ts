@@ -162,8 +162,8 @@ export class CoreState {
 
         var fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString());
         if (fromNetwork) {
-            // clean up toIp so it has the ip of the router and not device in network
-            toIp = ipAddress.toNetwork(toIp);
+
+            // TODO: find a way to cache the network map in network and only updating when necesarry
             console.log(fromNetwork.sendPacket(fromMac, toIp, data, this.makeNetworkMap(fromNetwork.networkIp.toString())));
             return true;
         }
@@ -238,7 +238,7 @@ export class CoreState {
                     routeIp = possibleNode;
                     break;
                 }
-                
+
                 prevNode = prevNode!.previous;
                 routeIp = prevNode!.ip;
             }

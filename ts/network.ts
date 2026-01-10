@@ -1,3 +1,5 @@
+import { data } from "jquery";
+
 export type ip  = string;
 export type mac = string;
 
@@ -233,12 +235,13 @@ export class Network {
     }
 
     sendPacket(fromDevice: string, toIp: string, data: string, netMap : Map<ip, ip>) : ip | null {
+
         // handle packet sending in local network
 
         var toMac = this.arpTable.get(toIp);
         if (toMac === undefined) {
             var sendIP = netMap.get(toIp);
-            if(!sendIP) {
+            if(!sendIP || ) {
                 return null;
             }
             // send to next Network
@@ -250,9 +253,8 @@ export class Network {
             return null;
         }
 
-        toDevice.receiveAndHandlePacket(fromDevice, toIp, data);
-        console.log(`Packet sent from ${fromDevice} to ${toDevice.macAddress.toString()} with data: ${data}`);
-        return this.networkIp.toString();
+        toDevice.receiveAndHandlePacket(data);
+        return null;
     }
 }
 
@@ -295,12 +297,12 @@ export class Komponent {
     this.inNetwork = type === "router";
   }
 
-  receiveAndHandlePacket(fromMac: string, toIp: string, data: string) : [string, string, string] | null {
+  receiveAndHandlePacket(data : string) : string | null {
     if(this.type !== "server") {
         return null;
     }
-    //TODO: implement packet handling and return a simple echo response back to the sender
-    return [fromMac, toIp, data];
+    //TODO: implement packet handling and return more than a simple echo response back to the sender
+    return data;
   }
 
 };
