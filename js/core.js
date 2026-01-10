@@ -161,7 +161,7 @@ export class CoreState {
                 const neighbor = copiedTopology.find(n => n.ip === edge.EndNode.ip);
                 if (neighbor && unvisited.has(neighbor)) {
                     const newDistance = current.distance + edge.lenght;
-                    if (newDistance < neighbor.distance || neighbor.distance === -1) {
+                    if (newDistance < neighbor.distance) {
                         neighbor.distance = newDistance;
                         neighbor.previous = current;
                     }
