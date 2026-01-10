@@ -20,6 +20,14 @@ export class ipAddress {
         return this.octets.every(octet => octet === 0);
     }
 
+    /**
+     * 
+     * @param ip a correctly formed ip string if unsure check with ipAdress.checkValidIpString()
+     */
+    static isNull(ip: ip){
+        ip.split(".").every(octet => parseInt(octet, 10) === 0);
+    }
+
     static toNetwork(ip: ip) : string {
         return (ip.slice(0, ip.lastIndexOf(".")+1)) + "0";
         
@@ -163,7 +171,7 @@ export class Network {
     networkDevices: Map<string, Komponent>;
     travelNodes: Array<DijkstraNode>;
     router : Komponent;
-    arpTable : Map<string, string>; //map of ip string to mac address string
+    arpTable : Map<ip, mac>; //map of ip string to mac address string
 
     
     
@@ -234,27 +242,28 @@ export class Network {
         return this.networkDevices.entries();
     }
 
-    sendPacket(fromDevice: string, toIp: string, data: string, netMap : Map<ip, ip>) : ip | null {
 
+    sendPacket(packet : Packet, netMap : Map<ip, ip>) : [ip | null, boolean] {
+        var networkIP = ipAddress.toNetwork(packet.destinationIP);
         // handle packet sending in local network
 
-        var toMac = this.arpTable.get(toIp);
+        var toMac = this.arpTable.get(packet.destinationIP);
         if (toMac === undefined) {
-            var sendIP = netMap.get(toIp);
-            if(!sendIP || ) {
-                return null;
+            var sendIP = netMap.get(networkIP);
+            if(!sendIP || ipAddress.isNull(sendIP)) {
+                return [null, false,];
             }
             // send to next Network
-            return sendIP;
+            return [sendIP, false];
         }
 
         var toDevice = this.networkDevices.get(toMac);
         if (toDevice === undefined) {
-            return null;
+            return [null, false];
         }
 
-        toDevice.receiveAndHandlePacket(data);
-        return null;
+        toDevice.receiveAndHandlePacket(packet);
+        return [null, true];
     }
 }
 
@@ -263,14 +272,14 @@ export class Packet{
     data : string;
     destinationIP : ip;
     sourceIP : ip;
-    destinationMac: mac;
+    destinationMac: mac | null;
     sourceMac: mac;
 
-    constructor(data : string, destinationIP : ip, sourceIP : ip, destinationMac : mac, sourceMac : mac) {
+    constructor(data : string, destinationIP : ip, sourceIP : ip, sourceMac : mac) {
         this.data = data;
         this.destinationIP = destinationIP;
         this.sourceIP = sourceIP;
-        this.destinationMac = destinationMac;
+        this.destinationMac = null;
         this.sourceMac = sourceMac;
     }
 
@@ -297,12 +306,12 @@ export class Komponent {
     this.inNetwork = type === "router";
   }
 
-  receiveAndHandlePacket(data : string) : string | null {
+  receiveAndHandlePacket(packet : Packet) : string | null {
     if(this.type !== "server") {
         return null;
     }
     //TODO: implement packet handling and return more than a simple echo response back to the sender
-    return data;
+    return packet.data;
   }
 
 };

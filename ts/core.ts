@@ -1,4 +1,4 @@
-import { DijkstraEdge, DijkstraNode, ipAddress, Komponent, macAddress, ip, mac, Network } from "./network.js";
+import { DijkstraEdge, DijkstraNode, ipAddress, Komponent, macAddress, ip, mac, Network, Packet } from "./network.js";
 import { checkValidRouterIP } from "./util.js";
 
 export class CoreState {
@@ -164,7 +164,8 @@ export class CoreState {
         if (fromNetwork) {
 
             // TODO: find a way to cache the network map in network and only updating when necesarry
-            console.log(fromNetwork.sendPacket(fromMac, toIp, data, this.makeNetworkMap(fromNetwork.networkIp.toString())));
+            var packet = new Packet(data, toIp, fromNetwork.networkIp.toString(), fromNetwork.router.macAddress.toString())
+            console.log(fromNetwork.sendPacket(packet, this.makeNetworkMap(fromNetwork.networkIp.toString())));
             return true;
         }
         return true;
