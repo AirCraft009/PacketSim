@@ -229,10 +229,20 @@ export class CoreState {
             }
             // prevNode is not null and no prevNodes can be null
             // root.previous == root so if prevNode.previous.ip == ip the rootnode was found
+            var routeIp : string = prevNode.ip;
             while (prevNode!.previous!.ip !== ip){
+
+                // if the node is already in the map use the map of the prevNode
+                var possibleNode = networkMap.get(prevNode!.ip);
+                if(possibleNode !== undefined) {
+                    routeIp = possibleNode;
+                    break;
+                }
+                
                 prevNode = prevNode!.previous;
+                routeIp = prevNode!.ip;
             }
-            networkMap.set(node.ip, prevNode!.ip);
+            networkMap.set(node.ip, routeIp);
         }
         return networkMap;
     }
