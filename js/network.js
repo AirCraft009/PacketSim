@@ -1,4 +1,4 @@
-export class ip {
+export class ipAddress {
     /**
      *
      * @param {A string in the format 111.111.111.111} ip
@@ -11,13 +11,16 @@ export class ip {
     isNull() {
         return this.octets.every(octet => octet === 0);
     }
+    static toNetwork(ip) {
+        return (ip.slice(0, ip.lastIndexOf(".") + 1)) + "0";
+    }
     isNetworkIP() {
         return this.octets[3] === 0;
     }
     getNetworkPart() {
         var clone = this.clone();
         clone.modifyOctet(3, 0);
-        return new ip(clone.toString());
+        return new ipAddress(clone.toString());
     }
     /**
      * Checks if all octets except the last one equal eachother.\
@@ -47,10 +50,10 @@ export class ip {
         }
         return true;
     }
-    constructOctets(ip) {
-        var stringOctets = ip.split(".");
+    constructOctets(ipString) {
+        var stringOctets = ipString.split(".");
         if (stringOctets.length !== 4) {
-            throw new Error("Invalid ip adress passed:" + ip);
+            throw new Error("Invalid ip adress passed:" + ipString);
         }
         stringOctets.forEach(octet => {
             try {
@@ -72,7 +75,7 @@ export class ip {
         this.octets[index] = value;
     }
     clone() {
-        return new ip(this.toString());
+        return new ipAddress(this.toString());
     }
     static checkValidIpString(ipString) {
         const octets = ipString.split(".");
@@ -178,8 +181,10 @@ export class Network {
         if (this.networkDevices.delete(macAddress)) {
             this.numDevices--;
             this.arpTable.delete(ipComp.ipAddress.toString());
+            return true;
         }
         ;
+        return false;
     }
     isRouterof(komponentMac) {
         return this.router.macAddress.toString() === komponentMac;
@@ -188,26 +193,47 @@ export class Network {
         // reset all components in the network to unconnected state
         this.networkDevices.forEach((component) => {
             component.inNetwork = false;
-            component.ipAddress = new ip("0.0.0.0");
+            component.ipAddress = new ipAddress("0.0.0.0");
             component.connections.delete(this.router.ipAddress.toString());
         });
         return this.networkDevices.entries();
     }
-    sendPacket(fromDevice, toIp, data) {
+    sendPacket(fromDevice, toIp, data, netMap) {
         // handle packet sending in local network
         var toMac = this.arpTable.get(toIp);
         if (toMac === undefined) {
-            // destination ip outside of local network
-            //TODO: handle routing via router
-            return false;
+            var sendIP = netMap.get(toIp);
+            if (!sendIP) {
+                return null;
+            }
+            // send to next Network
+            return sendIP;
         }
         var toDevice = this.networkDevices.get(toMac);
         if (toDevice === undefined) {
-            return false;
+            return null;
         }
         toDevice.receiveAndHandlePacket(fromDevice, toIp, data);
         console.log(`Packet sent from ${fromDevice} to ${toDevice.macAddress.toString()} with data: ${data}`);
-        return true;
+        return this.networkIp.toString();
+    }
+}
+export class Packet {
+    data;
+    destinationIP;
+    sourceIP;
+    destinationMac;
+    sourceMac;
+    constructor(data, destinationIP, sourceIP, destinationMac, sourceMac) {
+        this.data = data;
+        this.destinationIP = destinationIP;
+        this.sourceIP = sourceIP;
+        this.destinationMac = destinationMac;
+        this.sourceMac = sourceMac;
+    }
+    travelNetwork(sourceMac, destinationMac) {
+        this.sourceMac = sourceMac;
+        this.destinationMac = destinationMac;
     }
 }
 export class Komponent {
@@ -236,27 +262,25 @@ export class Komponent {
  * Node class for Dijkstra's algorithm
  */
 export class DijkstraNode {
-    id;
+    ip;
     previous;
     // right now all distances are equal so this is just a placeholder
     distance;
-    constructor(id) {
-        this.id = id;
+    outgoingEdges;
+    constructor(ip) {
+        this.ip = ip;
         this.previous = null;
         this.distance = -1;
+        this.outgoingEdges = [];
     }
 }
-/**
- * Node class for Router table
- * travel is the node the packet should be sent to next
- */
-class TravelNodes {
-    id;
-    distance;
-    travel;
-    constructor(id, distance, travel) {
-        this.id = id;
-        this.distance = distance;
-        this.travel = travel;
+export class DijkstraEdge {
+    lenght;
+    StartNode;
+    EndNode;
+    constructor(lenght, StartNode, EndNode) {
+        this.lenght = lenght;
+        this.StartNode = StartNode;
+        this.EndNode = EndNode;
     }
 }

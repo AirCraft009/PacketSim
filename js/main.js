@@ -1,6 +1,6 @@
 import * as Utils from "./util.js";
 import * as Core from "./core.js";
-import { ip } from "./network.js";
+import { ipAddress } from "./network.js";
 const grid = document.getElementById("grid");
 const modalEl = document.getElementById('textModal');
 const modal = new bootstrap.Modal(modalEl);
@@ -269,7 +269,7 @@ export function sendPacket() {
         alert("Please enter both packet data and target IP.");
         return;
     }
-    if (!ip.checkValidIpString(targetIp)) {
+    if (!ipAddress.checkValidIpString(targetIp)) {
         alert("Invalid target IP address.");
         return;
     }

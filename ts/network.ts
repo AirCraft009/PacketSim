@@ -18,6 +18,11 @@ export class ipAddress {
         return this.octets.every(octet => octet === 0);
     }
 
+    static toNetwork(ip: ip) : string {
+        return (ip.slice(0, ip.lastIndexOf(".")+1)) + "0";
+        
+    }
+
     isNetworkIP() {
         return this.octets[3] === 0;
     }
@@ -202,12 +207,14 @@ export class Network {
 
     
 
-    removeDevice(macAddress: string) {
+    removeDevice(macAddress: string) : boolean {
         var ipComp = this.networkDevices.get(macAddress);
         if(this.networkDevices.delete(macAddress)) {
             this.numDevices--;
             this.arpTable.delete(ipComp!.ipAddress.toString());
+            return true;
         };
+        return false;
     }
 
     isRouterof(komponentMac: string) : boolean {
@@ -225,27 +232,49 @@ export class Network {
         return this.networkDevices.entries();
     }
 
-    sendPacket(fromDevice: string, toIp: string, data: string, netMap : Map<string, string>) : boolean {
+    sendPacket(fromDevice: string, toIp: string, data: string, netMap : Map<ip, ip>) : ip | null {
         // handle packet sending in local network
 
         var toMac = this.arpTable.get(toIp);
         if (toMac === undefined) {
             var sendIP = netMap.get(toIp);
             if(!sendIP) {
-                return false;
+                return null;
             }
             // send to next Network
-            return true;
+            return sendIP;
         }
 
         var toDevice = this.networkDevices.get(toMac);
         if (toDevice === undefined) {
-            return false;
+            return null;
         }
 
         toDevice.receiveAndHandlePacket(fromDevice, toIp, data);
         console.log(`Packet sent from ${fromDevice} to ${toDevice.macAddress.toString()} with data: ${data}`);
-        return true;
+        return this.networkIp.toString();
+    }
+}
+
+
+export class Packet{
+    data : string;
+    destinationIP : ip;
+    sourceIP : ip;
+    destinationMac: mac;
+    sourceMac: mac;
+
+    constructor(data : string, destinationIP : ip, sourceIP : ip, destinationMac : mac, sourceMac : mac) {
+        this.data = data;
+        this.destinationIP = destinationIP;
+        this.sourceIP = sourceIP;
+        this.destinationMac = destinationMac;
+        this.sourceMac = sourceMac;
+    }
+
+    travelNetwork(sourceMac : mac, destinationMac : mac){
+        this.sourceMac = sourceMac;
+        this.destinationMac = destinationMac;
     }
 }
 

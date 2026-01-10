@@ -1,4 +1,4 @@
-import { ip } from "./network.js";
+import { ip, ipAddress } from "./network.js";
 
 const svg : any = document.getElementById("overlay");
 
@@ -45,11 +45,11 @@ export function checkValidRouterIP(routerIp: string | null) : boolean {
         return false;
     }
 
-    if (!ip.checkValidIpString(routerIp )) {
+    if (!ipAddress.checkValidIpString(routerIp )) {
         alert("Invalid IP adress entered removing router");
         return false;
     }
-    const ipAdress = new ip(routerIp);
+    const ipAdress = new ipAddress(routerIp);
     if (!ipAdress.isNetworkIP()){
         alert("All router IP's must end in 0 as they are Network IP's");
         return false;
