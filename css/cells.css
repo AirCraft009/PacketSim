@@ -5,6 +5,10 @@
     --grid-icon-size: calc(var(--cell-size) - 4px);
 }
 
+body {
+  background-color: #f8f9fa;
+}
+
 .grid {
       display: grid;
       grid-template-columns: repeat(var(--col-count), 1fr); /* 8 columns */
@@ -46,6 +50,42 @@
   position: relative;
   width: fit-content;
   height: fit-content;
+}
+
+#space-maker{
+  height: 70px;
+  display: block;
+  color: #f8f9fa;
+  background-color: #f8f9fa;
+}
+
+/**
+  * ChatGPT generated code start
+  */
+.editable {
+  display: inline-block;
+  min-width: 4ch;
+  outline: none;
+  cursor: text;
+}
+
+.editable:focus {
+  background: rgba(0,0,0,.05);
+}
+/**
+  * ChatGPT generated code end
+  */
+
+#packet-data-input{
+  width: 50%;
+}
+
+#target-ip-input{
+  width: 50%;
+}
+
+#editor{
+  padding-left: 3%;
 }
 
 
