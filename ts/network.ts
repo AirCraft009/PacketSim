@@ -172,6 +172,7 @@ export class Network {
     travelNodes: Array<DijkstraNode>;
     router : Komponent;
     arpTable : Map<ip, mac>; //map of ip string to mac address string
+    macAdress : mac;
 
     
     
@@ -185,6 +186,7 @@ export class Network {
         this.router = router;
         this.travelNodes = new Array();
         this.arpTable = new Map();
+        this.macAdress = router.macAddress.toString();
 
     }
 
@@ -228,7 +230,7 @@ export class Network {
     }
 
     isRouterof(komponentMac: string) : boolean {
-        return this.router.macAddress.toString() === komponentMac;
+        return this.macAdress === komponentMac;
     }
 
     destroyNetwork() : IterableIterator<[string, Komponent]> {
@@ -243,28 +245,46 @@ export class Network {
     }
 
 
-    sendPacket(packet : Packet, netMap : Map<ip, ip>) : [ip | null, boolean] {
+    sendPacket(packet : Packet, netMap : Map<ip, ip>) : Packet{
+        if(packet.destinationMac !== this.macAdress) {
+            packet.status = status.FAILED;
+            return packet;
+        }
         var networkIP = ipAddress.toNetwork(packet.destinationIP);
         // handle packet sending in local network
 
         var toMac = this.arpTable.get(packet.destinationIP);
         if (toMac === undefined) {
             var sendIP = netMap.get(networkIP);
+            //TODO : mac Adress
             if(!sendIP || ipAddress.isNull(sendIP)) {
-                return [null, false,];
+                packet.status = status.FAILED;
+                return packet;
             }
             // send to next Network
-            return [sendIP, false];
+            packet.status = status.SUCCESS;
+            packet.travelNetwork(this.macAdress, sendIP);
+            return packet;
         }
 
         var toDevice = this.networkDevices.get(toMac);
         if (toDevice === undefined) {
-            return [null, false];
+            packet.status=status.FAILED;
+            return packet 
         }
 
         toDevice.receiveAndHandlePacket(packet);
-        return [null, true];
+        packet.status = status.TERMINATED_SUCCESS;
+        return packet;
     }
+}
+
+enum status {
+    SUCCESS = 0,
+    FAILED = 1,
+    TERMINATED_SUCCESS = 2,
+    TERMINATED_FAILED = 3,
+    PENDING = 4,
 }
 
 
@@ -272,15 +292,17 @@ export class Packet{
     data : string;
     destinationIP : ip;
     sourceIP : ip;
-    destinationMac: mac | null;
+    destinationMac: mac;
     sourceMac: mac;
+    status : status;
 
-    constructor(data : string, destinationIP : ip, sourceIP : ip, sourceMac : mac) {
+    constructor(data : string, destinationIP : ip, sourceIP : ip, sourceMac : mac, destinationMac : mac) {
         this.data = data;
         this.destinationIP = destinationIP;
         this.sourceIP = sourceIP;
-        this.destinationMac = null;
+        this.destinationMac = destinationMac;
         this.sourceMac = sourceMac;
+        this.status = status.PENDING;
     }
 
     travelNetwork(sourceMac : mac, destinationMac : mac){
@@ -320,14 +342,16 @@ export class Komponent {
  * Node class for Dijkstra's algorithm
  */
 export class DijkstraNode {
-    ip : string;
+    ip : ip;
+    mac : mac;
     previous : DijkstraNode | null;
     // right now all distances are equal so this is just a placeholder
     distance : number;
     outgoingEdges: DijkstraEdge[];
 
-    constructor(ip : string) {
+    constructor(ip : string, mac : mac) {
         this.ip = ip;
+        this.mac = mac;
         this.previous = null;
         this.distance = Infinity;
         this.outgoingEdges = [];

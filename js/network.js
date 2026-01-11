@@ -11,6 +11,13 @@ export class ipAddress {
     isNull() {
         return this.octets.every(octet => octet === 0);
     }
+    /**
+     *
+     * @param ip a correctly formed ip string if unsure check with ipAdress.checkValidIpString()
+     */
+    static isNull(ip) {
+        ip.split(".").every(octet => parseInt(octet, 10) === 0);
+    }
     static toNetwork(ip) {
         return (ip.slice(0, ip.lastIndexOf(".") + 1)) + "0";
     }
@@ -142,6 +149,7 @@ export class Network {
     travelNodes;
     router;
     arpTable; //map of ip string to mac address string
+    macAdress;
     constructor(ip, router) {
         this.subnet = 24;
         this.modifyOctet = 3; // 24(host-bits)/8(size of a octet)
@@ -151,6 +159,7 @@ export class Network {
         this.router = router;
         this.travelNodes = new Array();
         this.arpTable = new Map();
+        this.macAdress = router.macAddress.toString();
     }
     /**
      *
@@ -187,7 +196,7 @@ export class Network {
         return false;
     }
     isRouterof(komponentMac) {
-        return this.router.macAddress.toString() === komponentMac;
+        return this.macAdress === komponentMac;
     }
     destroyNetwork() {
         // reset all components in the network to unconnected state
@@ -198,38 +207,58 @@ export class Network {
         });
         return this.networkDevices.entries();
     }
-    sendPacket(fromDevice, toIp, data, netMap) {
+    sendPacket(packet, netMap) {
+        if (packet.destinationMac !== this.macAdress) {
+            packet.status = status.FAILED;
+            return packet;
+        }
+        var networkIP = ipAddress.toNetwork(packet.destinationIP);
         // handle packet sending in local network
-        var toMac = this.arpTable.get(toIp);
+        var toMac = this.arpTable.get(packet.destinationIP);
         if (toMac === undefined) {
-            var sendIP = netMap.get(toIp);
-            if (!sendIP) {
-                return null;
+            var sendIP = netMap.get(networkIP);
+            //TODO : mac Adress
+            if (!sendIP || ipAddress.isNull(sendIP)) {
+                packet.status = status.FAILED;
+                return packet;
             }
             // send to next Network
-            return sendIP;
+            packet.status = status.SUCCESS;
+            packet.travelNetwork(this.macAdress, sendIP);
+            return packet;
         }
         var toDevice = this.networkDevices.get(toMac);
         if (toDevice === undefined) {
-            return null;
+            packet.status = status.FAILED;
+            return packet;
         }
-        toDevice.receiveAndHandlePacket(fromDevice, toIp, data);
-        console.log(`Packet sent from ${fromDevice} to ${toDevice.macAddress.toString()} with data: ${data}`);
-        return this.networkIp.toString();
+        toDevice.receiveAndHandlePacket(packet);
+        packet.status = status.TERMINATED_SUCCESS;
+        return packet;
     }
 }
+var status;
+(function (status) {
+    status[status["SUCCESS"] = 0] = "SUCCESS";
+    status[status["FAILED"] = 1] = "FAILED";
+    status[status["TERMINATED_SUCCESS"] = 2] = "TERMINATED_SUCCESS";
+    status[status["TERMINATED_FAILED"] = 3] = "TERMINATED_FAILED";
+    status[status["PENDING"] = 4] = "PENDING";
+})(status || (status = {}));
 export class Packet {
     data;
     destinationIP;
     sourceIP;
     destinationMac;
     sourceMac;
-    constructor(data, destinationIP, sourceIP, destinationMac, sourceMac) {
+    status;
+    constructor(data, destinationIP, sourceIP, sourceMac, destinationMac) {
         this.data = data;
         this.destinationIP = destinationIP;
         this.sourceIP = sourceIP;
         this.destinationMac = destinationMac;
         this.sourceMac = sourceMac;
+        this.status = status.PENDING;
     }
     travelNetwork(sourceMac, destinationMac) {
         this.sourceMac = sourceMac;
@@ -249,12 +278,12 @@ export class Komponent {
         this.macAddress = new macAddress();
         this.inNetwork = type === "router";
     }
-    receiveAndHandlePacket(fromMac, toIp, data) {
+    receiveAndHandlePacket(packet) {
         if (this.type !== "server") {
             return null;
         }
-        //TODO: implement packet handling and return a simple echo response back to the sender
-        return [fromMac, toIp, data];
+        //TODO: implement packet handling and return more than a simple echo response back to the sender
+        return packet.data;
     }
 }
 ;
@@ -263,12 +292,14 @@ export class Komponent {
  */
 export class DijkstraNode {
     ip;
+    mac;
     previous;
     // right now all distances are equal so this is just a placeholder
     distance;
     outgoingEdges;
-    constructor(ip) {
+    constructor(ip, mac) {
         this.ip = ip;
+        this.mac = mac;
         this.previous = null;
         this.distance = Infinity;
         this.outgoingEdges = [];

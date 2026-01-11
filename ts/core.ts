@@ -32,7 +32,7 @@ export class CoreState {
         }
 
         this.networks.set(router.ipAddress.toString(), new Network(router.ipAddress, router));
-        this.logicalNetworkTopology.push(new DijkstraNode(router.ipAddress.toString()));
+        this.logicalNetworkTopology.push(new DijkstraNode(router.ipAddress.toString(), router.macAddress.toString()));
         return router.macAddress;
     }
 
@@ -164,7 +164,7 @@ export class CoreState {
         if (fromNetwork) {
 
             // TODO: find a way to cache the network map in network and only updating when necesarry
-            var packet = new Packet(data, toIp, fromNetwork.networkIp.toString(), fromNetwork.router.macAddress.toString())
+            var packet = new Packet(data, toIp, fromNetwork.networkIp.toString(), fromNetwork.macAdress, fromNetwork.macAdress);
             console.log(fromNetwork.sendPacket(packet, this.makeNetworkMap(fromNetwork.networkIp.toString())));
             return true;
         }
@@ -176,6 +176,7 @@ export class CoreState {
         // Create a copy of the logical network topology
         const copiedTopology = this.logicalNetworkTopology.map(node => ({
             ip: node.ip,
+            mac: node.mac,
             distance: node.distance,
             previous: node.previous,
             outgoingEdges: node.outgoingEdges
@@ -214,10 +215,10 @@ export class CoreState {
         return copiedTopology;
         }
 
-    makeNetworkMap(ip: ip) : Map<ip, ip> {
+    makeNetworkMap(ip: ip) : Map<ip, mac> {
         const DijkstraTopology = this.calculateLogicalRoutes(ip);
         // map of ip to ip
-        const networkMap = new Map<ip, ip>();
+        const networkMap = new Map<ip, mac>();
         for (const node of DijkstraTopology) {
             if (node.ip === ip) {
                 continue;
@@ -225,25 +226,26 @@ export class CoreState {
             var prevNode = node.previous;
             if (!prevNode) {
                 // a node not connected to the one currently in focus
+                //TODO: null out mac not iP
                 networkMap.set(node.ip, "0.0.0.0");
                 continue;
             }
             // prevNode is not null and no prevNodes can be null
             // root.previous == root so if prevNode.previous.ip == ip the rootnode was found
-            var routeIp : string = prevNode.ip;
+            var routemac : string = prevNode.mac;
             while (prevNode!.previous!.ip !== ip){
 
                 // if the node is already in the map use the map of the prevNode
                 var possibleNode = networkMap.get(prevNode!.ip);
                 if(possibleNode !== undefined) {
-                    routeIp = possibleNode;
+                    routemac = possibleNode;
                     break;
                 }
 
                 prevNode = prevNode!.previous;
-                routeIp = prevNode!.ip;
+                routemac = prevNode!.mac;
             }
-            networkMap.set(node.ip, routeIp);
+            networkMap.set(node.ip, routemac);
         }
         return networkMap;
     }
