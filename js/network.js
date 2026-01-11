@@ -237,7 +237,7 @@ export class Network {
         return packet;
     }
 }
-var status;
+export var status;
 (function (status) {
     status[status["SUCCESS"] = 0] = "SUCCESS";
     status[status["FAILED"] = 1] = "FAILED";
@@ -263,6 +263,19 @@ export class Packet {
     travelNetwork(sourceMac, destinationMac) {
         this.sourceMac = sourceMac;
         this.destinationMac = destinationMac;
+    }
+    formatMessage() {
+        switch (this.status) {
+            case status.PENDING:
+                return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} hasn't started to travel";
+            case status.TERMINATED_SUCCESS:
+                return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} successfully arrived at host " + this.destinationIP;
+            case status.FAILED:
+                return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} failed at: " + this.destinationMac;
+            case status.SUCCESS:
+                return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} is traveling from " + this.sourceMac + " to " + this.destinationMac;
+        }
+        return "";
     }
 }
 export class Komponent {

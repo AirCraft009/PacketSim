@@ -1,15 +1,17 @@
-import { DijkstraEdge, DijkstraNode, ipAddress, Komponent, Network, Packet } from "./network.js";
+import { DijkstraEdge, DijkstraNode, ipAddress, Komponent, Network, Packet, status } from "./network.js";
 import { checkValidRouterIP } from "./util.js";
 export class CoreState {
     networks;
     unconnectedComponents;
     logicalNetworkTopology;
     connectionMap;
+    activePackets;
     constructor() {
         this.unconnectedComponents = new Map();
         this.networks = new Map();
         this.logicalNetworkTopology = new Array();
         this.connectionMap = new Map();
+        this.activePackets = new Array();
     }
     addComponent(type) {
         // Create a new component with a default IP of
@@ -134,11 +136,21 @@ export class CoreState {
         var fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString());
         if (fromNetwork) {
             // TODO: find a way to cache the network map in network and only updating when necesarry
-            var packet = new Packet(data, toIp, fromNetwork.networkIp.toString(), fromNetwork.macAdress, fromNetwork.macAdress);
+            var packet = new Packet(data, toIp, fromMac, fromNetwork.macAdress, fromNetwork.macAdress);
             console.log(fromNetwork.sendPacket(packet, this.makeNetworkMap(fromNetwork.networkIp.toString())));
+            this.activePackets.push(packet);
             return true;
         }
         return true;
+    }
+    stepTick() {
+    }
+    handlePacket(index) {
+        var relPacket = this.activePackets.at(index);
+        if (!relPacket) {
+            return;
+        }
+        if (relPacket.status !== status.SUCCESS) { }
     }
     calculateLogicalRoutes(ip) {
         // Create a copy of the logical network topology

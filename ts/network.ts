@@ -310,7 +310,7 @@ export class Packet{
         this.destinationMac = destinationMac;
     }
 
-    formatMessage() {
+    formatMessage() : string {
         switch (this.status) {
             case status.PENDING:
                 return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} hasn't started to travel";
@@ -321,6 +321,7 @@ export class Packet{
             case status.SUCCESS:
                 return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} is traveling from " + this.sourceMac + " to " + this.destinationMac;
         }
+        return "";
     }
 }
 
