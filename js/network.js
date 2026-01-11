@@ -11,6 +11,13 @@ export class ipAddress {
     isNull() {
         return this.octets.every(octet => octet === 0);
     }
+    /**
+     *
+     * @param ip a correctly formed ip string if unsure check with ipAdress.checkValidIpString()
+     */
+    static isNull(ip) {
+        ip.split(".").every(octet => parseInt(octet, 10) === 0);
+    }
     static toNetwork(ip) {
         return (ip.slice(0, ip.lastIndexOf(".") + 1)) + "0";
     }
@@ -170,7 +177,7 @@ export class Network {
         this.numDevices++;
         let newIp = this.networkIp.clone();
         newIp.modifyOctet(this.modifyOctet, this.networkIp.octets[this.modifyOctet] + this.numDevices);
-        component.ipAddress = newIp;
+        component.updateIp(newIp);
         component.inNetwork = true;
         this.networkDevices.set(component.macAddress.toString(), component);
         this.arpTable.set(newIp.toString(), component.macAddress.toString());
@@ -198,24 +205,24 @@ export class Network {
         });
         return this.networkDevices.entries();
     }
-    sendPacket(fromDevice, toIp, data, netMap) {
+    sendPacket(packet, netMap) {
+        var networkIP = ipAddress.toNetwork(packet.destinationIP);
         // handle packet sending in local network
-        var toMac = this.arpTable.get(toIp);
+        var toMac = this.arpTable.get(packet.destinationIP);
         if (toMac === undefined) {
-            var sendIP = netMap.get(toIp);
-            if (!sendIP) {
-                return null;
+            var sendMac = netMap.get(networkIP);
+            if (!sendMac || ipAddress.isNull(sendMac)) {
+                return [null, false,];
             }
             // send to next Network
-            return sendIP;
+            return [sendMac, false];
         }
         var toDevice = this.networkDevices.get(toMac);
         if (toDevice === undefined) {
-            return null;
+            return [null, false];
         }
-        toDevice.receiveAndHandlePacket(fromDevice, toIp, data);
-        console.log(`Packet sent from ${fromDevice} to ${toDevice.macAddress.toString()} with data: ${data}`);
-        return this.networkIp.toString();
+        toDevice.receiveAndHandlePacket(packet);
+        return [null, true];
     }
 }
 export class Packet {
@@ -224,11 +231,11 @@ export class Packet {
     sourceIP;
     destinationMac;
     sourceMac;
-    constructor(data, destinationIP, sourceIP, destinationMac, sourceMac) {
+    constructor(data, destinationIP, sourceIP, sourceMac) {
         this.data = data;
         this.destinationIP = destinationIP;
         this.sourceIP = sourceIP;
-        this.destinationMac = destinationMac;
+        this.destinationMac = null;
         this.sourceMac = sourceMac;
     }
     travelNetwork(sourceMac, destinationMac) {
@@ -242,19 +249,25 @@ export class Komponent {
     ipAddress;
     macAddress;
     inNetwork;
+    stdGateWay;
     constructor(type, ipAddress) {
         this.type = type;
         this.connections = new Set();
         this.ipAddress = ipAddress;
         this.macAddress = new macAddress();
         this.inNetwork = type === "router";
+        this.stdGateWay = ipAddress.getNetworkPart();
     }
-    receiveAndHandlePacket(fromMac, toIp, data) {
+    receiveAndHandlePacket(packet) {
         if (this.type !== "server") {
             return null;
         }
-        //TODO: implement packet handling and return a simple echo response back to the sender
-        return [fromMac, toIp, data];
+        //TODO: implement packet handling and return more than a simple echo response back to the sender
+        return packet.data;
+    }
+    updateIp(ipAddress) {
+        this.ipAddress = ipAddress;
+        this.stdGateWay = this.ipAddress.getNetworkPart();
     }
 }
 ;
@@ -262,13 +275,13 @@ export class Komponent {
  * Node class for Dijkstra's algorithm
  */
 export class DijkstraNode {
-    ip;
+    mac;
     previous;
     // right now all distances are equal so this is just a placeholder
     distance;
     outgoingEdges;
-    constructor(ip) {
-        this.ip = ip;
+    constructor(mac) {
+        this.mac = mac;
         this.previous = null;
         this.distance = Infinity;
         this.outgoingEdges = [];

@@ -207,7 +207,7 @@ export class Network {
         this.numDevices++;
         let newIp = this.networkIp.clone();
         newIp.modifyOctet(this.modifyOctet, this.networkIp.octets[this.modifyOctet] + this.numDevices);
-        component.ipAddress = newIp;
+        component.updateIp(newIp);
         component.inNetwork = true;
         this.networkDevices.set(component.macAddress.toString(), component);
 
@@ -243,18 +243,18 @@ export class Network {
     }
 
 
-    sendPacket(packet : Packet, netMap : Map<ip, ip>) : [ip | null, boolean] {
+    sendPacket(packet : Packet, netMap : Map<mac, mac>) : [ip | null, boolean] {
         var networkIP = ipAddress.toNetwork(packet.destinationIP);
         // handle packet sending in local network
 
         var toMac = this.arpTable.get(packet.destinationIP);
         if (toMac === undefined) {
-            var sendIP = netMap.get(networkIP);
-            if(!sendIP || ipAddress.isNull(sendIP)) {
+            var sendMac = netMap.get(packet.destinationMac);
+            if(!sendMac || ipAddress.isNull(sendMac)) {
                 return [null, false,];
             }
             // send to next Network
-            return [sendIP, false];
+            return [sendMac, false];
         }
 
         var toDevice = this.networkDevices.get(toMac);
@@ -272,14 +272,14 @@ export class Packet{
     data : string;
     destinationIP : ip;
     sourceIP : ip;
-    destinationMac: mac | null;
+    destinationMac: mac
     sourceMac: mac;
 
-    constructor(data : string, destinationIP : ip, sourceIP : ip, sourceMac : mac) {
+    constructor(data : string, destinationIP : ip, sourceIP : ip, sourceMac : mac, destinationMac : mac) {
         this.data = data;
         this.destinationIP = destinationIP;
         this.sourceIP = sourceIP;
-        this.destinationMac = null;
+        this.destinationMac = destinationMac;
         this.sourceMac = sourceMac;
     }
 
@@ -296,6 +296,7 @@ export class Komponent {
     ipAddress : ipAddress;
     macAddress: macAddress;
     inNetwork: boolean;
+    stdGateWay: ipAddress;
 
 
   constructor(type: string, ipAddress: ipAddress) {
@@ -304,6 +305,7 @@ export class Komponent {
     this.ipAddress = ipAddress;
     this.macAddress = new macAddress();
     this.inNetwork = type === "router";
+    this.stdGateWay = ipAddress.getNetworkPart();
   }
 
   receiveAndHandlePacket(packet : Packet) : string | null {
@@ -314,20 +316,25 @@ export class Komponent {
     return packet.data;
   }
 
+  updateIp(ipAddress : ipAddress) {
+    this.ipAddress = ipAddress;
+    this.stdGateWay = this.ipAddress.getNetworkPart();
+  }
+
 };
 
 /**
  * Node class for Dijkstra's algorithm
  */
 export class DijkstraNode {
-    ip : string;
+    mac : mac;
     previous : DijkstraNode | null;
     // right now all distances are equal so this is just a placeholder
     distance : number;
     outgoingEdges: DijkstraEdge[];
 
-    constructor(ip : string) {
-        this.ip = ip;
+    constructor(mac : string) {
+        this.mac = mac;
         this.previous = null;
         this.distance = Infinity;
         this.outgoingEdges = [];
