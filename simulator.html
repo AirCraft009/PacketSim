@@ -30,15 +30,21 @@
   <div class="container-fluid" style="margin: 30px;">
     <div class="row">
       <div class="col-2">
-        <img src="imgs/transparent/pc.png" class="draggable" draggable="true" id="pc-template" data-template="true"
-          data-type="pc">
-        <img src="imgs/transparent/server.png" class="draggable" draggable="true" id="server" data-template="true"
-          data-type="server">
-        <img src="imgs/transparent/router.png" class="draggable" draggable="true" id="router" data-template="true"
-          data-type="router">
+        <div id="component-origin">
+          <img src="imgs/transparent/pc.png" class="draggable" draggable="true" id="pc-template" data-template="true"
+            data-type="pc">
+          <img src="imgs/transparent/server.png" class="draggable" draggable="true" id="server" data-template="true"
+            data-type="server">
+          <img src="imgs/transparent/router.png" class="draggable" draggable="true" id="router" data-template="true"
+            data-type="router">
+        </div>
+
+        <div id="space-maker"></div>
+        <div id="log-container">
+          <div id="log"></div>
+        </div>
       </div>
-
-
+  
       <div class="col-auto">
         <div class="board-wrapper">
           <svg id="overlay" xmlns="http://www.w3.org/2000/svg" overflow="visible"></svg>

@@ -164,7 +164,7 @@ export class CoreState {
         if (fromNetwork) {
 
             // TODO: find a way to cache the network map in network and only updating when necesarry
-            var packet = new Packet(data, toIp, fromNetwork.networkIp.toString(), fromNetwork.macAdress, fromNetwork.macAdress);
+            var packet = new Packet(data, toIp, fromMac, fromNetwork.macAdress, fromNetwork.macAdress);
             console.log(fromNetwork.sendPacket(packet, this.makeNetworkMap(fromNetwork.networkIp.toString())));
             return true;
         }
