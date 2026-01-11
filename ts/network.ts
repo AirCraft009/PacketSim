@@ -279,7 +279,7 @@ export class Network {
     }
 }
 
-enum status {
+export enum status {
     SUCCESS = 0,
     FAILED = 1,
     TERMINATED_SUCCESS = 2,
@@ -308,6 +308,19 @@ export class Packet{
     travelNetwork(sourceMac : mac, destinationMac : mac){
         this.sourceMac = sourceMac;
         this.destinationMac = destinationMac;
+    }
+
+    formatMessage() {
+        switch (this.status) {
+            case status.PENDING:
+                return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} hasn't started to travel";
+            case status.TERMINATED_SUCCESS:
+                return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} successfully arrived at host " + this.destinationIP;
+            case status.FAILED:
+                return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} failed at: " + this.destinationMac;
+            case status.SUCCESS:
+                return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} is traveling from " + this.sourceMac + " to " + this.destinationMac;
+        }
     }
 }
 

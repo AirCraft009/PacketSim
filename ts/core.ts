@@ -1,4 +1,4 @@
-import { DijkstraEdge, DijkstraNode, ipAddress, Komponent, macAddress, ip, mac, Network, Packet } from "./network.js";
+import { DijkstraEdge, DijkstraNode, ipAddress, Komponent, macAddress, ip, mac, Network, Packet, status } from "./network.js";
 import { checkValidRouterIP } from "./util.js";
 
 export class CoreState {
@@ -6,12 +6,14 @@ export class CoreState {
     unconnectedComponents: Map<mac, Komponent>;
     logicalNetworkTopology: Array<DijkstraNode>;
     connectionMap: Map<mac, Array<mac>>;
+    activePackets: Array<Packet>;
 
     constructor() {
         this.unconnectedComponents = new Map();
         this.networks = new Map();
         this.logicalNetworkTopology = new Array();
         this.connectionMap = new Map();
+        this.activePackets = new Array();
     }
 
     addComponent(type: string) : macAddress{
@@ -146,6 +148,8 @@ export class CoreState {
         return [component.type, component.ipAddress.toString(), component.macAddress.toString(), component.connections.size.toString(), component.ipAddress.getNetworkPart().toString(), ];
     }
 
+
+
     SendPacket(fromMac: mac, toIp: ip, data: string) : boolean {
 
         // get Network of fromMac
@@ -166,9 +170,23 @@ export class CoreState {
             // TODO: find a way to cache the network map in network and only updating when necesarry
             var packet = new Packet(data, toIp, fromMac, fromNetwork.macAdress, fromNetwork.macAdress);
             console.log(fromNetwork.sendPacket(packet, this.makeNetworkMap(fromNetwork.networkIp.toString())));
+            this.activePackets.push(packet);
             return true;
         }
         return true;
+    }
+
+    stepTick(){
+       
+    }
+
+    handlePacket(index: number){
+        var relPacket = this.activePackets.at(index);
+        if (!relPacket) {
+            return;
+        }
+
+        if (relPacket.status !== status.SUCCESS) {}
     }
 
 

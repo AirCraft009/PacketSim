@@ -25,6 +25,9 @@ for (let i = 0; i < 10; i++){
 document.getElementById("sendPacket-button")!
     .addEventListener("click", main.sendPacket);
 
+document.getElementById("tickStep-button")!
+    .addEventListener("click", main.stepTick);
+
 main.InitDocumentListeners();
 main.createGrid(121);
 

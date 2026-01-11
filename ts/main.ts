@@ -342,3 +342,7 @@ export function sendPacket() {
   
   coreState.SendPacket(indexToMacMap.get(connStartIndex)!, targetIp, data);
 }
+
+export function stepTick(){
+  
+}
