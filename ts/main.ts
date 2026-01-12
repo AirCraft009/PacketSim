@@ -12,12 +12,14 @@ const modalEl = document.getElementById('textModal') as HTMLElement;
 const modal = new bootstrap.Modal(modalEl);
 
 
+
+
 var connectingMode = false;
 var connStartCell: HTMLElement | null = null;
 var connStartIndex: number = 0;
 var selected = false;
 var draggedTemplate: HTMLElement | null = null;
-const ipToindexMap: Map<string, number> = new Map();
+const IPToIndexMap: Map<mac, number> = new Map();
 const indexToMacMap: Map<number, mac> = new Map();
 const coreState = new Core.CoreState();
 
@@ -31,6 +33,13 @@ const state = {
   gateway: "192.168.1.0",
   subnetmask: "/24"
 };
+
+const packetModalState = {
+  targetIp: "192.168.1.0",
+  sourceIp: "192.168.1.0",
+  sourceMac: "aa:bb:cc:dd:ee:ff",
+  targetMac: "aa:bb:cc:dd:ee:ff", 
+}
 
 
 
@@ -136,16 +145,17 @@ function dropListener(cell: HTMLElement, index: number) {
       getRouterIpModal().then((ipString) => {
         var routerMac = coreState.addRouter(ipString);
         if(routerMac !== false) {
-          indexToMacMap.set(index, routerMac.toString());
-          ipToindexMap.set()
+          indexToMacMap.set(index, routerMac[0].toString());
+          IPToIndexMap.set(routerMac[1].toString(), index);
           return;
         }
         removeVisual(index, cell);
       });
       return;
     }
-
-    indexToMacMap.set(index, coreState.addComponent(draggedTemplate.dataset.type as string).toString());
+    var comp = coreState.addComponent(draggedTemplate.dataset.type as string).toString();
+    indexToMacMap.set(index, comp[0].toString());
+    IPToIndexMap.set(comp[1].toString(), index);
   });
 }
 
@@ -282,6 +292,19 @@ function renderEditBox() {
       el.textContent = state[key as keyof typeof state];
     }
   });
+}
+
+function renderPacketModal(){
+  document.querySelectorAll(".modal-ediatble").forEach((el : any) => {
+    const key = el.dataset.key as string;
+    if (key in packetModalState){
+      el.textContent = packetModalState[key as keyof typeof packetModalState];
+    }
+  })
+}
+
+function updatePacketModal() {
+  // TODO: find a way to get input from the packets
 }
 
 

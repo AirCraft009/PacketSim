@@ -17,7 +17,7 @@ export class CoreState {
         // Create a new component with a default IP of
         var component = new Komponent(type, new ipAddress("0.0.0.0"));
         this.unconnectedComponents.set(component.macAddress.toString(), component);
-        return component.macAddress;
+        return [component.macAddress.toString(), component.ipAddress.toString()];
     }
     addRouter(ipString) {
         if (!checkValidRouterIP(ipString)) {
@@ -30,7 +30,7 @@ export class CoreState {
         }
         this.networks.set(router.ipAddress.toString(), new Network(router.ipAddress, router));
         this.logicalNetworkTopology.push(new DijkstraNode(router.ipAddress.toString(), router.macAddress.toString()));
-        return router.macAddress;
+        return [router.macAddress.toString(), router.ipAddress.toString()];
     }
     removeComponent(componentMac) {
         if (this.connectionMap.has(componentMac)) {

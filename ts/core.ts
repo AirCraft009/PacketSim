@@ -16,14 +16,14 @@ export class CoreState {
         this.activePackets = new Array();
     }
 
-    addComponent(type: string) : macAddress{
+    addComponent(type: string) : [mac, ip]{
         // Create a new component with a default IP of
         var component = new Komponent(type, new ipAddress("0.0.0.0"));
         this.unconnectedComponents.set(component.macAddress.toString(), component);
-        return component.macAddress;
+        return [component.macAddress.toString(), component.ipAddress.toString()];
     }
 
-    addRouter(ipString : ip | null) : macAddress | false {
+    addRouter(ipString : ip | null) : [mac, ip] | false {
         if(!checkValidRouterIP(ipString)) {
             return false;
         }
@@ -35,7 +35,7 @@ export class CoreState {
 
         this.networks.set(router.ipAddress.toString(), new Network(router.ipAddress, router));
         this.logicalNetworkTopology.push(new DijkstraNode(router.ipAddress.toString(), router.macAddress.toString()));
-        return router.macAddress;
+        return [router.macAddress.toString(), router.ipAddress.toString()];
     }
 
     removeComponent(componentMac: mac) {

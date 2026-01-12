@@ -9,6 +9,7 @@ var connStartCell = null;
 var connStartIndex = 0;
 var selected = false;
 var draggedTemplate = null;
+const IPToIndexMap = new Map();
 const indexToMacMap = new Map();
 const coreState = new Core.CoreState();
 // default state for the editor on the right
@@ -20,6 +21,12 @@ const state = {
     connection: "0",
     gateway: "192.168.1.0",
     subnetmask: "/24"
+};
+const packetModalState = {
+    targetIp: "192.168.1.0",
+    sourceIp: "192.168.1.0",
+    sourceMac: "aa:bb:cc:dd:ee:ff",
+    targetMac: "aa:bb:cc:dd:ee:ff",
 };
 /**
  * Initialize document listeners for drag and drop and input disabling
@@ -99,14 +106,17 @@ function dropListener(cell, index) {
             getRouterIpModal().then((ipString) => {
                 var routerMac = coreState.addRouter(ipString);
                 if (routerMac !== false) {
-                    indexToMacMap.set(index, routerMac.toString());
+                    indexToMacMap.set(index, routerMac[0].toString());
+                    IPToIndexMap.set(routerMac[1].toString(), index);
                     return;
                 }
                 removeVisual(index, cell);
             });
             return;
         }
-        indexToMacMap.set(index, coreState.addComponent(draggedTemplate.dataset.type).toString());
+        var comp = coreState.addComponent(draggedTemplate.dataset.type).toString();
+        indexToMacMap.set(index, comp[0].toString());
+        IPToIndexMap.set(comp[1].toString(), index);
     });
 }
 function resetHighlight() {
@@ -223,6 +233,17 @@ function renderEditBox() {
             el.textContent = state[key];
         }
     });
+}
+function renderPacketModal() {
+    document.querySelectorAll(".modal-ediatble").forEach((el) => {
+        const key = el.dataset.key;
+        if (key in packetModalState) {
+            el.textContent = packetModalState[key];
+        }
+    });
+}
+function updatePacketModal() {
+    // TODO: find a way to get input from the packets
 }
 function activateEditMode() {
     if (connectingMode && connStartCell != null) {

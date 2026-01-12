@@ -1,12 +1,12 @@
-import { ip, ipAddress } from "./network.js";
+import { ip, ipAddress, Packet } from "./network.js";
 
-const svg : any = document.getElementById("overlay");
+const svg: any = document.getElementById("overlay");
 
 
 // Utility functions for drawing and deleting lines
 
-function centerOf(el : any) : any {
-  const r : any = el.getBoundingClientRect();
+function centerOf(el: any): any {
+  const r: any = el.getBoundingClientRect();
   return {
     x: r.left + r.width / 2,
     y: r.top + r.height / 2
@@ -33,27 +33,83 @@ export function drawLine(cellA: HTMLElement, cellB: HTMLElement, indexA: number,
 }
 
 export function removeConnections(index: number) {
-  const line : any = svg.querySelectorAll(`line[index-a='${index}'], line[index-b='${index}']`);
+  const line: any = svg.querySelectorAll(`line[index-a='${index}'], line[index-b='${index}']`);
   line.forEach((e: Element) => {
     svg.removeChild(e);
   });
 }
 
-export function checkValidRouterIP(routerIp: string | null) : boolean {
-    if (!routerIp) {
-        alert("No IP entered removing router");
-        return false;
-    }
+export function checkValidRouterIP(routerIp: string | null): boolean {
+  if (!routerIp) {
+    alert("No IP entered removing router");
+    return false;
+  }
 
-    if (!ipAddress.checkValidIpString(routerIp )) {
-        alert("Invalid IP adress entered removing router");
-        return false;
-    }
-    const ipAdress = new ipAddress(routerIp);
-    if (!ipAdress.isNetworkIP()){
-        alert("All router IP's must end in 0 as they are Network IP's");
-        return false;
-    }
+  if (!ipAddress.checkValidIpString(routerIp)) {
+    alert("Invalid IP adress entered removing router");
+    return false;
+  }
+  const ipAdress = new ipAddress(routerIp);
+  if (!ipAdress.isNetworkIP()) {
+    alert("All router IP's must end in 0 as they are Network IP's");
+    return false;
+  }
 
-    return true;
+  return true;
+}
+
+
+export function addLine(text: string) {
+
+  const log = document.getElementById("log") as any;
+  const container = document.getElementById("log-container") as any;
+  const atBottom =
+    container.scrollTop + container.clientHeight >= container.scrollHeight - 5;
+
+  const line = document.createElement("div");
+  line.className = "log-line";
+  line.textContent = text;
+  log.appendChild(line);
+
+  if (atBottom) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+export function addPacket(packet: Packet) {
+  const log = document.getElementById("log") as any;
+  const container = document.getElementById("log-container") as any;
+  const atBottom =
+    container.scrollTop + container.clientHeight >= container.scrollHeight - 5;
+
+  const line = document.createElement("div");
+  const linkPacket = document.createElement("a");
+  const linkSource = document.createElement("a");
+  const linkDest = document.createElement("a");
+
+  linkPacket.href = "#"
+  linkSource.href = "aa"
+  linkDest.href = "bb"
+
+  linkSource.setAttribute("style", "color:orange")
+  linkDest.setAttribute("style", "color:green")
+  linkPacket.setAttribute("data-bs-toggle", "modal");
+  linkPacket.setAttribute("data-bs-target", "#packetModal")
+
+  line.className = "log-line";
+  linkPacket.textContent = "Packet{";
+  linkSource.textContent = packet.sourceIP + "; ";
+  linkDest.textContent = packet.destinationIP;
+  // copy now so it keeps the set attr
+  const linkPacketEnd = linkPacket.cloneNode(false);
+  linkPacketEnd.textContent = "}"
+  line.appendChild(linkPacket);
+  line.appendChild(linkSource);
+  line.appendChild(linkDest);
+  line.appendChild(linkPacketEnd);
+  log.appendChild(line);
+
+  if (atBottom) {
+    container.scrollTop = container.scrollHeight;
+  }
 }

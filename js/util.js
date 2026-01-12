@@ -45,3 +45,46 @@ export function checkValidRouterIP(routerIp) {
     }
     return true;
 }
+export function addLine(text) {
+    const log = document.getElementById("log");
+    const container = document.getElementById("log-container");
+    const atBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 5;
+    const line = document.createElement("div");
+    line.className = "log-line";
+    line.textContent = text;
+    log.appendChild(line);
+    if (atBottom) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+export function addPacket(packet) {
+    const log = document.getElementById("log");
+    const container = document.getElementById("log-container");
+    const atBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 5;
+    const line = document.createElement("div");
+    const linkPacket = document.createElement("a");
+    const linkSource = document.createElement("a");
+    const linkDest = document.createElement("a");
+    linkPacket.href = "#";
+    linkSource.href = "aa";
+    linkDest.href = "bb";
+    linkSource.setAttribute("style", "color:orange");
+    linkDest.setAttribute("style", "color:green");
+    linkPacket.setAttribute("data-bs-toggle", "modal");
+    linkPacket.setAttribute("data-bs-target", "#packetModal");
+    line.className = "log-line";
+    linkPacket.textContent = "Packet{";
+    linkSource.textContent = packet.sourceIP + "; ";
+    linkDest.textContent = packet.destinationIP;
+    // copy now so it keeps the set attr
+    const linkPacketEnd = linkPacket.cloneNode(false);
+    linkPacketEnd.textContent = "}";
+    line.appendChild(linkPacket);
+    line.appendChild(linkSource);
+    line.appendChild(linkDest);
+    line.appendChild(linkPacketEnd);
+    log.appendChild(line);
+    if (atBottom) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
