@@ -17,6 +17,7 @@ var connStartCell: HTMLElement | null = null;
 var connStartIndex: number = 0;
 var selected = false;
 var draggedTemplate: HTMLElement | null = null;
+const ipToindexMap: Map<string, number> = new Map();
 const indexToMacMap: Map<number, mac> = new Map();
 const coreState = new Core.CoreState();
 
@@ -136,6 +137,7 @@ function dropListener(cell: HTMLElement, index: number) {
         var routerMac = coreState.addRouter(ipString);
         if(routerMac !== false) {
           indexToMacMap.set(index, routerMac.toString());
+          ipToindexMap.set()
           return;
         }
         removeVisual(index, cell);

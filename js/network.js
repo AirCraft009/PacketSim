@@ -277,6 +277,9 @@ export class Packet {
         }
         return "";
     }
+    toString() {
+        return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "}";
+    }
 }
 export class Komponent {
     type;

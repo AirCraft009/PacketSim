@@ -1,5 +1,3 @@
-import { data } from "jquery";
-
 export type ip  = string;
 export type mac = string;
 
@@ -322,6 +320,10 @@ export class Packet{
                 return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} is traveling from " + this.sourceMac + " to " + this.destinationMac;
         }
         return "";
+    }
+
+    toString() : string{
+        return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "}";
     }
 }
 
