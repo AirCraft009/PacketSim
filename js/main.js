@@ -34,7 +34,7 @@ const packetModalState = {
 export function InitDocumentListeners() {
     initDocumentDrag();
     disableInput();
-    enableLogClick();
+    //enableLogClick();
 }
 /**
  * create cells & core visual functionality\
@@ -92,10 +92,11 @@ function removeAtrributesFromClone(clone) {
 }
 function dropListener(cell, index) {
     cell.addEventListener("drop", (e) => {
+        e.preventDefault();
         //  remove the highlight of the currently selected component on drop
         resetHighlight();
         cell.classList.remove("hover");
-        const type = e.dataTransfer?.getData("text/template");
+        const type = e.dataTransfer?.getData("text/plain");
         if (!type)
             return;
         // prevent multiple pieces per cell
@@ -120,7 +121,7 @@ function dropListener(cell, index) {
             });
             return;
         }
-        var comp = coreState.addComponent(type).toString();
+        var comp = coreState.addComponent(type);
         indexToMacMap.set(index, comp[0]);
         IPToIndexMap.set(comp[1], index);
     });
@@ -188,11 +189,17 @@ function getRouterIpModal() {
     });
 }
 function initDocumentDrag() {
-    document.addEventListener("dragstart", (e) => {
-        const target = e.target;
-        if (!target.dataset.template)
-            return;
-        e.dataTransfer?.setData("text/template", target.dataset.template);
+    document.querySelectorAll(".draggable").forEach((el) => {
+        el.addEventListener("dragstart", (e) => {
+            if (!e.dataTransfer)
+                return;
+            const type = el.dataset.type;
+            if (!type)
+                return;
+            // REQUIRED for Firefox
+            e.dataTransfer.setData("text/plain", type);
+            e.dataTransfer.effectAllowed = "copy";
+        });
     });
 }
 function disableInput() {
@@ -231,6 +238,7 @@ function enableLogClick() {
 }
 function openEditBox() {
     if (!selected || connStartCell == null) {
+        console.log("thats why!!!");
         return;
     }
     updateState();

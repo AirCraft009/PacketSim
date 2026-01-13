@@ -47,7 +47,7 @@ const packetModalState = {
 export function InitDocumentListeners() {
   initDocumentDrag();
   disableInput();
-  enableLogClick();
+  //enableLogClick();
 }
 
 
@@ -128,10 +128,11 @@ function removeAtrributesFromClone(clone: HTMLElement) {
 
 function dropListener(cell: HTMLElement, index: number) {
   cell.addEventListener("drop", (e: DragEvent) => {
+    e.preventDefault();
     //  remove the highlight of the currently selected component on drop
     resetHighlight();
     cell.classList.remove("hover");
-    const type = e.dataTransfer?.getData("text/template")
+    const type = e.dataTransfer?.getData("text/plain")
     if (!type) return;
     // prevent multiple pieces per cell
     if (cell.children.length > 0) return;
@@ -160,7 +161,7 @@ function dropListener(cell: HTMLElement, index: number) {
       });
       return;
     }
-    var comp = coreState.addComponent(type).toString();
+    var comp = coreState.addComponent(type);
     indexToMacMap.set(index, comp[0]);
     IPToIndexMap.set(comp[1], index);
   });
@@ -240,11 +241,18 @@ function getRouterIpModal() : Promise<string | null> {
 
 
 function initDocumentDrag() {
-  document.addEventListener("dragstart", (e: DragEvent) => {
-    const target = e.target as HTMLElement;
-    if (!target.dataset.template) return;
 
-    e.dataTransfer?.setData("text/template", target.dataset.template);
+  document.querySelectorAll(".draggable").forEach((el : any) => {
+    el.addEventListener("dragstart", (e: DragEvent) => {
+      if (!e.dataTransfer) return;
+
+      const type = (el as HTMLElement).dataset.type;
+      if (!type) return;
+
+      // REQUIRED for Firefox
+      e.dataTransfer.setData("text/plain", type);
+      e.dataTransfer.effectAllowed = "copy";
+    });
   });
 }
 
@@ -289,6 +297,7 @@ function enableLogClick(){
 
 function openEditBox() {
   if (!selected || connStartCell == null) {
+    console.log("thats why!!!");
     return;
   }
   updateState();
