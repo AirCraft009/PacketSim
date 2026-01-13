@@ -5,13 +5,16 @@ export class CoreState {
     unconnectedComponents;
     logicalNetworkTopology;
     connectionMap;
+    // index of currently active packets 
     activePackets;
+    allPackets;
     constructor() {
         this.unconnectedComponents = new Map();
         this.networks = new Map();
         this.logicalNetworkTopology = new Array();
         this.connectionMap = new Map();
         this.activePackets = new Array();
+        this.allPackets = new Array();
     }
     addComponent(type) {
         // Create a new component with a default IP of
@@ -127,30 +130,34 @@ export class CoreState {
         var fromComp = this.getComponentByMac(fromMac);
         if (fromComp === null) {
             console.error("Component not found");
-            return false;
+            return null;
         }
         if (!fromComp.inNetwork) {
             console.error("Component not in a network connect to a router first");
-            return false;
+            return null;
         }
         var fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString());
         if (fromNetwork) {
             // TODO: find a way to cache the network map in network and only updating when necesarry
             var packet = new Packet(data, toIp, fromMac, fromNetwork.macAdress, fromNetwork.macAdress);
             console.log(fromNetwork.sendPacket(packet, this.makeNetworkMap(fromNetwork.networkIp.toString())));
-            this.activePackets.push(packet);
-            return true;
+            this.allPackets.push(packet);
+            this.activePackets.push(this.allPackets.length - 1);
+            return packet;
         }
-        return true;
+        return null;
     }
     stepTick() {
     }
     handlePacket(index) {
-        var relPacket = this.activePackets.at(index);
+        var relPacket = this.allPackets.at(index);
         if (!relPacket) {
             return;
         }
         if (relPacket.status !== status.SUCCESS) { }
+    }
+    getPacketInfo(id) {
+        return this.allPackets.at(id);
     }
     calculateLogicalRoutes(ip) {
         // Create a copy of the logical network topology

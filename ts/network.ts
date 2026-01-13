@@ -285,8 +285,16 @@ export enum status {
     PENDING = 4,
 }
 
+class PacketId{
+    static id : number = -1;
+    
+    static getNextId(){
+        return this.id+=1;
+    }
+}
 
 export class Packet{
+    id : number
     data : string;
     destinationIP : ip;
     sourceIP : ip;
@@ -301,6 +309,7 @@ export class Packet{
         this.destinationMac = destinationMac;
         this.sourceMac = sourceMac;
         this.status = status.PENDING;
+        this.id = PacketId.getNextId();
     }
 
     travelNetwork(sourceMac : mac, destinationMac : mac){
@@ -323,7 +332,7 @@ export class Packet{
     }
 
     toString() : string{
-        return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "}";
+        return "Packet{id: " + this.id + "start: " + this.sourceIP + "; target: " + this.destinationIP + "}";
     }
 }
 

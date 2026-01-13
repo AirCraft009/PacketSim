@@ -66,19 +66,21 @@ export function addPacket(packet) {
     const linkSource = document.createElement("a");
     const linkDest = document.createElement("a");
     linkPacket.href = "#";
-    linkSource.href = "aa";
-    linkDest.href = "bb";
+    linkSource.href = "#";
+    linkDest.href = "#";
     linkSource.setAttribute("style", "color:orange");
     linkDest.setAttribute("style", "color:green");
     linkPacket.setAttribute("data-bs-toggle", "modal");
     linkPacket.setAttribute("data-bs-target", "#packetModal");
     line.className = "log-line";
-    linkPacket.textContent = "Packet{";
+    line.setAttribute("id", packet.id.toString());
+    linkPacket.textContent = "Packet{" + "id: " + packet.id + "; ";
     linkSource.textContent = packet.sourceIP + "; ";
     linkDest.textContent = packet.destinationIP;
     // copy now so it keeps the set attr
     const linkPacketEnd = linkPacket.cloneNode(false);
     linkPacketEnd.textContent = "}";
+    line.className = "modal-editable";
     line.appendChild(linkPacket);
     line.appendChild(linkSource);
     line.appendChild(linkDest);

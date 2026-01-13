@@ -6,7 +6,9 @@ export class CoreState {
     unconnectedComponents: Map<mac, Komponent>;
     logicalNetworkTopology: Array<DijkstraNode>;
     connectionMap: Map<mac, Array<mac>>;
-    activePackets: Array<Packet>;
+    // index of currently active packets 
+    activePackets: Array<number>;
+    allPackets: Array<Packet>
 
     constructor() {
         this.unconnectedComponents = new Map();
@@ -14,6 +16,7 @@ export class CoreState {
         this.logicalNetworkTopology = new Array();
         this.connectionMap = new Map();
         this.activePackets = new Array();
+        this.allPackets = new Array();
     }
 
     addComponent(type: string) : [mac, ip]{
@@ -150,18 +153,18 @@ export class CoreState {
 
 
 
-    SendPacket(fromMac: mac, toIp: ip, data: string) : boolean {
+    SendPacket(fromMac: mac, toIp: ip, data: string) : Packet | null {
 
         // get Network of fromMac
         var fromComp = this.getComponentByMac(fromMac);
         if (fromComp === null) {
             console.error("Component not found");
-            return false;
+            return null;
         }
 
         if (!fromComp.inNetwork) {
             console.error("Component not in a network connect to a router first");
-            return false;
+            return null;
         }
 
         var fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString());
@@ -170,10 +173,11 @@ export class CoreState {
             // TODO: find a way to cache the network map in network and only updating when necesarry
             var packet = new Packet(data, toIp, fromMac, fromNetwork.macAdress, fromNetwork.macAdress);
             console.log(fromNetwork.sendPacket(packet, this.makeNetworkMap(fromNetwork.networkIp.toString())));
-            this.activePackets.push(packet);
-            return true;
+            this.allPackets.push(packet);
+            this.activePackets.push(this.allPackets.length-1)
+            return packet;
         }
-        return true;
+        return null;
     }
 
     stepTick(){
@@ -181,12 +185,17 @@ export class CoreState {
     }
 
     handlePacket(index: number){
-        var relPacket = this.activePackets.at(index);
+        var relPacket = this.allPackets.at(index);
         if (!relPacket) {
             return;
         }
 
         if (relPacket.status !== status.SUCCESS) {}
+    }
+
+    getPacketInfo(id : number){
+        return this.allPackets.at(id)
+
     }
 
 

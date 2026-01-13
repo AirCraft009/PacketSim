@@ -245,7 +245,14 @@ export var status;
     status[status["TERMINATED_FAILED"] = 3] = "TERMINATED_FAILED";
     status[status["PENDING"] = 4] = "PENDING";
 })(status || (status = {}));
+class PacketId {
+    static id = -1;
+    static getNextId() {
+        return this.id += 1;
+    }
+}
 export class Packet {
+    id;
     data;
     destinationIP;
     sourceIP;
@@ -259,6 +266,7 @@ export class Packet {
         this.destinationMac = destinationMac;
         this.sourceMac = sourceMac;
         this.status = status.PENDING;
+        this.id = PacketId.getNextId();
     }
     travelNetwork(sourceMac, destinationMac) {
         this.sourceMac = sourceMac;
@@ -278,7 +286,7 @@ export class Packet {
         return "";
     }
     toString() {
-        return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "}";
+        return "Packet{id: " + this.id + "start: " + this.sourceIP + "; target: " + this.destinationIP + "}";
     }
 }
 export class Komponent {

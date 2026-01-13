@@ -4,11 +4,11 @@ import { ipAddress } from "./network.js";
 const grid = document.getElementById("grid");
 const modalEl = document.getElementById('textModal');
 const modal = new bootstrap.Modal(modalEl);
+const modalPacket = new bootstrap.Modal(document.getElementById('packetModal'));
 var connectingMode = false;
 var connStartCell = null;
 var connStartIndex = 0;
 var selected = false;
-var draggedTemplate = null;
 const IPToIndexMap = new Map();
 const indexToMacMap = new Map();
 const coreState = new Core.CoreState();
@@ -34,6 +34,7 @@ const packetModalState = {
 export function InitDocumentListeners() {
     initDocumentDrag();
     disableInput();
+    enableLogClick();
 }
 /**
  * create cells & core visual functionality\
@@ -90,33 +91,38 @@ function removeAtrributesFromClone(clone) {
     clone.style.pointerEvents = "none"; // optional
 }
 function dropListener(cell, index) {
-    cell.addEventListener("drop", () => {
+    cell.addEventListener("drop", (e) => {
         //  remove the highlight of the currently selected component on drop
         resetHighlight();
         cell.classList.remove("hover");
-        if (!draggedTemplate)
+        const type = e.dataTransfer?.getData("text/template");
+        if (!type)
             return;
         // prevent multiple pieces per cell
         if (cell.children.length > 0)
             return;
-        const clone = draggedTemplate.cloneNode(true);
+        const template = document.querySelector(`[data-template][data-type="${type}"]`);
+        if (!template) {
+            return;
+        }
+        const clone = template.cloneNode(true);
         removeAtrributesFromClone(clone);
         cell.appendChild(clone);
-        if (draggedTemplate.dataset.type === "router") {
+        if (type === "router") {
             getRouterIpModal().then((ipString) => {
                 var routerMac = coreState.addRouter(ipString);
                 if (routerMac !== false) {
-                    indexToMacMap.set(index, routerMac[0].toString());
-                    IPToIndexMap.set(routerMac[1].toString(), index);
+                    indexToMacMap.set(index, routerMac[0]);
+                    IPToIndexMap.set(routerMac[1], index);
                     return;
                 }
                 removeVisual(index, cell);
             });
             return;
         }
-        var comp = coreState.addComponent(draggedTemplate.dataset.type).toString();
-        indexToMacMap.set(index, comp[0].toString());
-        IPToIndexMap.set(comp[1].toString(), index);
+        var comp = coreState.addComponent(type).toString();
+        indexToMacMap.set(index, comp[0]);
+        IPToIndexMap.set(comp[1], index);
     });
 }
 function resetHighlight() {
@@ -184,12 +190,9 @@ function getRouterIpModal() {
 function initDocumentDrag() {
     document.addEventListener("dragstart", (e) => {
         const target = e.target;
-        if (target.dataset.template) {
-            draggedTemplate = target;
-        }
-    });
-    document.addEventListener("dragend", () => {
-        draggedTemplate = null;
+        if (!target.dataset.template)
+            return;
+        e.dataTransfer?.setData("text/template", target.dataset.template);
     });
 }
 function disableInput() {
@@ -207,6 +210,22 @@ function disableInput() {
                 // remove focus from the element
                 element.blur();
             }
+        });
+    });
+}
+function enableLogClick() {
+    document.querySelectorAll(".modal-editable").forEach((editable) => {
+        editable.addEventListener("mousedown", (e) => {
+            if (e.button !== 0) {
+                return;
+            }
+            var packetId = editable.getAttribute("id");
+            var packet = coreState.getPacketInfo(packetId);
+            if (!packet) {
+                return;
+            }
+            updatePacketModal(packet.destinationIP, packet.sourceIP, packet.destinationMac, packet.sourceMac);
+            renderPacketModal();
         });
     });
 }
@@ -242,8 +261,11 @@ function renderPacketModal() {
         }
     });
 }
-function updatePacketModal() {
-    // TODO: find a way to get input from the packets
+function updatePacketModal(targetIP, sourceIP, sourceMac, targetMac) {
+    packetModalState.targetIp = targetIP;
+    packetModalState.sourceIp = sourceIP;
+    packetModalState.targetMac = targetMac;
+    packetModalState.sourceMac = sourceMac;
 }
 function activateEditMode() {
     if (connectingMode && connStartCell != null) {
@@ -294,7 +316,11 @@ export function sendPacket() {
         alert("Invalid target IP address.");
         return;
     }
-    coreState.SendPacket(indexToMacMap.get(connStartIndex), targetIp, data);
+    var packet = coreState.SendPacket(indexToMacMap.get(connStartIndex), targetIp, data);
+    if (!packet) {
+        return;
+    }
+    Utils.addPacket(packet);
 }
 export function stepTick() {
 }
