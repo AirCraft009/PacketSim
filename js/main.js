@@ -1,10 +1,8 @@
 import * as Utils from "./util.js";
 import * as Core from "./core.js";
 import { ipAddress } from "./network.js";
-const grid = document.getElementById("grid");
-const modalEl = document.getElementById('textModal');
-const modal = new bootstrap.Modal(modalEl);
-const modalPacket = new bootstrap.Modal(document.getElementById('packetModal'));
+const modal = new window.bootstrap.Modal(getModalEL());
+const modalPacket = new window.bootstrap.Modal(getPacketModalEl());
 var connectingMode = false;
 var connStartCell = null;
 var connStartIndex = 0;
@@ -34,7 +32,16 @@ const packetModalState = {
 export function InitDocumentListeners() {
     initDocumentDrag();
     disableInput();
-    //enableLogClick();
+    enableLogClick();
+}
+function getGrid() {
+    return document.getElementById("grid");
+}
+function getModalEL() {
+    return document.getElementById('textModal');
+}
+function getPacketModalEl() {
+    return document.getElementById('packetModal');
 }
 /**
  * create cells & core visual functionality\
@@ -50,7 +57,7 @@ export function createGrid(n) {
         // set basic drag and drop listeners
         setDragListeners(cell, i);
         handleMouseClick(cell, i);
-        grid.appendChild(cell);
+        getGrid().appendChild(cell);
     }
 }
 // utility functions for component management and visual connection
@@ -64,6 +71,7 @@ function handleMouseClick(cell, i) {
         if (hasChild(cell)) {
             // right click to remove component
             if (e.button == 2) {
+                coreState.stepTick();
                 removeVisual(i, cell);
                 coreState.removeComponent(indexToMacMap.get(i));
             }
@@ -179,13 +187,13 @@ function getRouterIpModal() {
             const modalForm = document.getElementById('modalForm');
             if (modalForm)
                 modalForm.removeEventListener('submit', submitHandler);
-            modalEl.removeEventListener('hidden.bs.modal', closeHandler);
+            getModalEL().removeEventListener('hidden.bs.modal', closeHandler);
         };
         const modalForm = document.getElementById('modalForm');
         if (modalForm) {
             modalForm.addEventListener('submit', submitHandler);
         }
-        modalEl.addEventListener('hidden.bs.modal', closeHandler);
+        getModalEL().addEventListener('hidden.bs.modal', closeHandler);
     });
 }
 function initDocumentDrag() {
@@ -227,7 +235,7 @@ function enableLogClick() {
                 return;
             }
             var packetId = editable.getAttribute("id");
-            var packet = coreState.getPacketInfo(packetId);
+            var packet = coreState.getPacketInfo(parseInt(packetId));
             if (!packet) {
                 return;
             }
@@ -324,11 +332,21 @@ export function sendPacket() {
         alert("Invalid target IP address.");
         return;
     }
-    var packet = coreState.SendPacket(indexToMacMap.get(connStartIndex), targetIp, data);
+    var packet = coreState.RegisterPacket(indexToMacMap.get(connStartIndex), targetIp, data);
     if (!packet) {
         return;
     }
     Utils.addPacket(packet);
+    enableLogClick();
 }
 export function stepTick() {
+    var packet_indexes = coreState.stepTick();
+    for (var i of packet_indexes) {
+        var packet = coreState.getPacketInfo(i);
+        if (!packet) {
+            continue;
+        }
+        Utils.addLine(packet.formatMessage());
+    }
 }
+//# sourceMappingURL=main.js.map

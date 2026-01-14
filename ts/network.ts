@@ -243,10 +243,10 @@ export class Network {
     }
 
 
-    sendPacket(packet : Packet, netMap : Map<ip, ip>) : Packet{
+    sendPacket(packet : Packet, netMap : Map<ip, ip>) : boolean{
         if(packet.destinationMac !== this.macAdress) {
             packet.status = status.FAILED;
-            return packet;
+            return false;
         }
         var networkIP = ipAddress.toNetwork(packet.destinationIP);
         // handle packet sending in local network
@@ -254,26 +254,30 @@ export class Network {
         var toMac = this.arpTable.get(packet.destinationIP);
         if (toMac === undefined) {
             var sendIP = netMap.get(networkIP);
+            console.log(sendIP);
+            
             //TODO : mac Adress
             if(!sendIP || ipAddress.isNull(sendIP)) {
                 packet.status = status.FAILED;
-                return packet;
+                return false;
             }
             // send to next Network
             packet.status = status.SUCCESS;
             packet.travelNetwork(this.macAdress, sendIP);
-            return packet;
+            return true;
         }
 
         var toDevice = this.networkDevices.get(toMac);
         if (toDevice === undefined) {
-            packet.status=status.FAILED;
-            return packet 
+            packet.status = status.FAILED;
+            return false 
         }
 
         toDevice.receiveAndHandlePacket(packet);
         packet.status = status.TERMINATED_SUCCESS;
-        return packet;
+        packet.sourceMac = this.macAdress;
+        packet.destinationMac = toMac;
+        return false;
     }
 }
 
@@ -320,13 +324,13 @@ export class Packet{
     formatMessage() : string {
         switch (this.status) {
             case status.PENDING:
-                return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} hasn't started to travel";
+                return "Packet{id: " + this.id+ "} hasn't started to travel";
             case status.TERMINATED_SUCCESS:
-                return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} successfully arrived at host " + this.destinationIP;
+                return "Packet{id: " + this.id + "} successfully arrived at host " + this.sourceMac;
             case status.FAILED:
-                return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} failed at: " + this.destinationMac;
+                return "Packet{id: " + this.id + "} failed at: " + this.destinationMac;
             case status.SUCCESS:
-                return "Packet{start: " + this.sourceIP + "; target: " + this.destinationIP + "} is traveling from " + this.sourceMac + " to " + this.destinationMac;
+                return "Packet{id: " + this.id + "} is traveling from " + this.sourceMac + " to " + this.destinationMac;
         }
         return "";
     }

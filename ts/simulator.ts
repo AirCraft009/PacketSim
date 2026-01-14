@@ -1,7 +1,4 @@
 import * as main from "./main.js";
-import * as Network from "./network.js";
-import * as util from "./util.js"
-
 document.getElementById("sendPacket-button")!
     .addEventListener("click", main.sendPacket);
 

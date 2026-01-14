@@ -5,3 +5,4 @@ document.getElementById("tickStep-button")
     .addEventListener("click", main.stepTick);
 main.InitDocumentListeners();
 main.createGrid(121);
+//# sourceMappingURL=simulator.js.map

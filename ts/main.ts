@@ -4,13 +4,14 @@ import { ipAddress, mac, ip } from "./network.js";
 
 
 
-// force types for bootstrap elements to be any
-declare var bootstrap: any;
+declare global {
+  interface Window {
+    bootstrap: any
+  }
+}
 
-const grid: HTMLElement = document.getElementById("grid") as HTMLElement;
-const modalEl = document.getElementById('textModal') as HTMLElement;
-const modal = new bootstrap.Modal(modalEl);
-const modalPacket = new bootstrap.Modal(document.getElementById('packetModal'))
+const modal = new window.bootstrap.Modal(getModalEL());
+const modalPacket = new window.bootstrap.Modal(getPacketModalEl());
 
 
 
@@ -47,7 +48,19 @@ const packetModalState = {
 export function InitDocumentListeners() {
   initDocumentDrag();
   disableInput();
-  //enableLogClick();
+  enableLogClick();
+}
+
+function getGrid() {
+  return document.getElementById("grid") as HTMLElement;
+}
+
+function getModalEL(){
+  return document.getElementById('textModal') as HTMLElement;
+}
+
+function getPacketModalEl(){
+  return document.getElementById('packetModal') as HTMLElement;
 }
 
 
@@ -70,7 +83,7 @@ export function createGrid(n: number) {
     setDragListeners(cell, i);
     handleMouseClick(cell, i);
 
-    grid.appendChild(cell);
+    getGrid().appendChild(cell);
   }
 }
 
@@ -90,6 +103,7 @@ function handleMouseClick(cell: HTMLElement, i: number) {
     if (hasChild(cell)) {
       // right click to remove component
       if (e.button == 2) {
+        coreState.stepTick()
         removeVisual(i, cell);
         coreState.removeComponent(indexToMacMap.get(i)!);
       }
@@ -149,6 +163,7 @@ function dropListener(cell: HTMLElement, index: number) {
     removeAtrributesFromClone(clone);
     cell.appendChild(clone);
 
+    
     if(type === "router") {
       getRouterIpModal().then((ipString) => {
         var routerMac = coreState.addRouter(ipString);
@@ -226,7 +241,7 @@ function getRouterIpModal() : Promise<string | null> {
         modal.hide();
         const modalForm = document.getElementById('modalForm');
         if (modalForm) modalForm.removeEventListener('submit', submitHandler);
-        modalEl.removeEventListener('hidden.bs.modal', closeHandler);
+        getModalEL().removeEventListener('hidden.bs.modal', closeHandler);
     };
 
 
@@ -235,7 +250,7 @@ function getRouterIpModal() : Promise<string | null> {
     if (modalForm) {
       modalForm.addEventListener('submit', submitHandler);
     }
-    modalEl.addEventListener('hidden.bs.modal', closeHandler);
+    getModalEL().addEventListener('hidden.bs.modal', closeHandler);
   });
 }
 
@@ -283,8 +298,8 @@ function enableLogClick(){
       if(e.button !== 0){
         return;
       }
-      var packetId : number = editable.getAttribute("id");
-      var packet = coreState.getPacketInfo(packetId);
+      var packetId : string = editable.getAttribute("id");
+      var packet = coreState.getPacketInfo(parseInt(packetId));
       if (!packet){
         return
       }
@@ -398,13 +413,21 @@ export function sendPacket() {
     return;
   }
   
-  var packet = coreState.SendPacket(indexToMacMap.get(connStartIndex)!, targetIp, data);
+  var packet = coreState.RegisterPacket(indexToMacMap.get(connStartIndex)!, targetIp, data);
   if (!packet){
     return;
   }
   Utils.addPacket(packet);
+  enableLogClick()
 }
 
 export function stepTick(){
-  
+  var packet_indexes = coreState.stepTick();
+  for (var i of packet_indexes) {
+    var packet = coreState.getPacketInfo(i);
+    if (!packet) {
+      continue;
+    }
+    Utils.addLine(packet.formatMessage());
+  }
 }

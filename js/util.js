@@ -1,5 +1,4 @@
 import { ipAddress } from "./network.js";
-const svg = document.getElementById("overlay");
 // Utility functions for drawing and deleting lines
 function centerOf(el) {
     const r = el.getBoundingClientRect();
@@ -11,6 +10,7 @@ function centerOf(el) {
 export function drawLine(cellA, cellB, indexA, indexB) {
     const a = centerOf(cellA);
     const b = centerOf(cellB);
+    const svg = document.getElementById("overlay");
     const svgRect = svg.getBoundingClientRect();
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute("x1", (a.x - svgRect.left).toString());
@@ -24,6 +24,7 @@ export function drawLine(cellA, cellB, indexA, indexB) {
     svg.appendChild(line);
 }
 export function removeConnections(index) {
+    const svg = document.getElementById("overlay");
     const line = svg.querySelectorAll(`line[index-a='${index}'], line[index-b='${index}']`);
     line.forEach((e) => {
         svg.removeChild(e);
@@ -90,3 +91,4 @@ export function addPacket(packet) {
         container.scrollTop = container.scrollHeight;
     }
 }
+//# sourceMappingURL=util.js.map

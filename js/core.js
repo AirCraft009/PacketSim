@@ -1,4 +1,4 @@
-import { DijkstraEdge, DijkstraNode, ipAddress, Komponent, Network, Packet, status } from "./network.js";
+import { DijkstraEdge, DijkstraNode, ipAddress, Komponent, Network, Packet } from "./network.js";
 import { checkValidRouterIP } from "./util.js";
 export class CoreState {
     networks;
@@ -125,7 +125,7 @@ export class CoreState {
         }
         return [component.type, component.ipAddress.toString(), component.macAddress.toString(), component.connections.size.toString(), component.ipAddress.getNetworkPart().toString(),];
     }
-    SendPacket(fromMac, toIp, data) {
+    RegisterPacket(fromMac, toIp, data) {
         // get Network of fromMac
         var fromComp = this.getComponentByMac(fromMac);
         if (fromComp === null) {
@@ -138,26 +138,46 @@ export class CoreState {
         }
         var fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString());
         if (fromNetwork) {
-            // TODO: find a way to cache the network map in network and only updating when necesarry
-            var packet = new Packet(data, toIp, fromMac, fromNetwork.macAdress, fromNetwork.macAdress);
-            console.log(fromNetwork.sendPacket(packet, this.makeNetworkMap(fromNetwork.networkIp.toString())));
+            // packet uses the fromNetwork.macAdress as source 
+            // even when it comes from a in network device 
+            // to make the handling easier by allowing the router to be found by getComponentByMac
+            var packet = new Packet(data, toIp, fromNetwork.networkIp.toString(), fromNetwork.macAdress, fromNetwork.macAdress);
             this.allPackets.push(packet);
             this.activePackets.push(this.allPackets.length - 1);
             return packet;
         }
         return null;
     }
-    stepTick() {
-    }
-    handlePacket(index) {
-        var relPacket = this.allPackets.at(index);
-        if (!relPacket) {
-            return;
+    sendPacket(packet) {
+        var fromRouter = this.getComponentByMac(packet.sourceMac);
+        if (!fromRouter) {
+            return false;
         }
-        if (relPacket.status !== status.SUCCESS) { }
+        // TODO: find a way to cache the network map in network and only updating when necesarry
+        if (!this.networks.get(fromRouter.ipAddress.toString()).sendPacket(packet, this.makeNetworkMap(fromRouter.ipAddress.toString()))) {
+            //not active anymore 
+            this.activePackets = this.activePackets.filter(packet_id => packet_id !== packet.id);
+            return false;
+        }
+        ;
+        return true;
+    }
+    stepTick() {
+        const sentPackets = new Array();
+        for (const packet_index of this.activePackets) {
+            if (this.sendPacket(this.allPackets[packet_index])) {
+            }
+            ;
+            sentPackets.push(packet_index);
+        }
+        return sentPackets;
     }
     getPacketInfo(id) {
-        return this.allPackets.at(id);
+        var packet = this.allPackets.at(id);
+        if (!packet || packet.id !== id) {
+            return this.allPackets.find(packet => packet.id === id);
+        }
+        return packet;
     }
     calculateLogicalRoutes(ip) {
         // Create a copy of the logical network topology
@@ -220,8 +240,10 @@ export class CoreState {
                 prevNode = prevNode.previous;
                 routemac = prevNode.mac;
             }
-            networkMap.set(node.ip, routemac);
+            if (prevNode)
+                networkMap.set(node.ip, routemac);
         }
         return networkMap;
     }
 }
+//# sourceMappingURL=core.js.map

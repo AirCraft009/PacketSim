@@ -153,7 +153,7 @@ export class CoreState {
 
 
 
-    SendPacket(fromMac: mac, toIp: ip, data: string) : Packet | null {
+    RegisterPacket(fromMac: mac, toIp: ip, data: string) : Packet | null {
 
         // get Network of fromMac
         var fromComp = this.getComponentByMac(fromMac);
@@ -170,9 +170,10 @@ export class CoreState {
         var fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString());
         if (fromNetwork) {
 
-            // TODO: find a way to cache the network map in network and only updating when necesarry
-            var packet = new Packet(data, toIp, fromMac, fromNetwork.macAdress, fromNetwork.macAdress);
-            console.log(fromNetwork.sendPacket(packet, this.makeNetworkMap(fromNetwork.networkIp.toString())));
+            // packet uses the fromNetwork.macAdress as source 
+            // even when it comes from a in network device 
+            // to make the handling easier by allowing the router to be found by getComponentByMac
+            var packet = new Packet(data, toIp, fromNetwork.networkIp.toString(), fromNetwork.macAdress, fromNetwork.macAdress);
             this.allPackets.push(packet);
             this.activePackets.push(this.allPackets.length-1)
             return packet;
@@ -180,22 +181,39 @@ export class CoreState {
         return null;
     }
 
-    stepTick(){
-       
-    }
-
-    handlePacket(index: number){
-        var relPacket = this.allPackets.at(index);
-        if (!relPacket) {
-            return;
+    sendPacket(packet: Packet) : boolean {
+        var fromRouter = this.getComponentByMac(packet.sourceMac);
+        if (!fromRouter) {
+            return false;
         }
-
-        if (relPacket.status !== status.SUCCESS) {}
+        // TODO: find a way to cache the network map in network and only updating when necesarry
+        if(!this.networks.get(fromRouter.ipAddress.toString())!.sendPacket(packet, this.makeNetworkMap(fromRouter.ipAddress.toString()))){
+            //not active anymore 
+            this.activePackets = this.activePackets.filter(packet_id => packet_id !== packet.id);
+            return false;
+        };
+        return true;
     }
+
+    stepTick() : Array<number>{
+        const sentPackets = new Array<number>();
+        for (const packet_index of this.activePackets){
+            if(this.sendPacket(this.allPackets[packet_index])){
+
+            };
+            sentPackets.push(packet_index);
+        }
+        return sentPackets;
+    }
+
 
     getPacketInfo(id : number){
-        return this.allPackets.at(id)
+        var packet = this.allPackets.at(id)
+        if(!packet || packet.id !== id) {
+            return this.allPackets.find(packet => packet.id === id);
+        }
 
+        return packet;
     }
 
 
@@ -272,6 +290,7 @@ export class CoreState {
                 prevNode = prevNode!.previous;
                 routemac = prevNode!.mac;
             }
+            if(prevNode)
             networkMap.set(node.ip, routemac);
         }
         return networkMap;
