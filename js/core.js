@@ -101,10 +101,16 @@ export class CoreState {
         var fromComp = this.getComponentByMac(fromMac);
         var toComp = this.getComponentByMac(toMac);
         if (fromComp.type === "router" && toComp.type === "router") {
-            var fromNode = this.logicalNetworkTopology.filter((n) => n.ip.toString() === fromComp.ipAddress.toString())[0];
-            var toNode = this.logicalNetworkTopology.filter((n) => n.ip.toString() === toComp.ipAddress.toString())[0];
+            var fromIp = fromComp.ipAddress.toString();
+            var toIP = toComp.ipAddress.toString();
+            var fromNode = this.logicalNetworkTopology.filter((n) => n.ip.toString() === fromIp)[0];
+            var toNode = this.logicalNetworkTopology.filter((n) => n.ip.toString() === toIP)[0];
             fromNode.outgoingEdges.push(new DijkstraEdge(1, fromNode, toNode));
             toNode.outgoingEdges.push(new DijkstraEdge(1, toNode, fromNode));
+            var fromNet = this.networks.get(fromIp);
+            var toNet = this.networks.get(toIP);
+            fromNet.arpTable.set(toIP, toNet.macAdress);
+            toNet.arpTable.set(fromIp, fromNet.macAdress);
         }
         if (fromComp.inNetwork && !toComp.inNetwork) {
             var fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString());
@@ -149,7 +155,7 @@ export class CoreState {
         return null;
     }
     sendPacket(packet) {
-        var fromRouter = this.getComponentByMac(packet.sourceMac);
+        var fromRouter = this.getComponentByMac(packet.destinationMac);
         if (!fromRouter) {
             return false;
         }
@@ -240,8 +246,8 @@ export class CoreState {
                 prevNode = prevNode.previous;
                 routemac = prevNode.mac;
             }
-            if (prevNode)
-                networkMap.set(node.ip, routemac);
+            console.log(node.ip, prevNode.ip);
+            networkMap.set(node.ip, routemac);
         }
         return networkMap;
     }

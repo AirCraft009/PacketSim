@@ -208,35 +208,37 @@ export class Network {
         return this.networkDevices.entries();
     }
     sendPacket(packet, netMap) {
-        if (packet.destinationMac !== this.macAdress) {
-            packet.status = status.FAILED;
-            return false;
-        }
         var networkIP = ipAddress.toNetwork(packet.destinationIP);
         // handle packet sending in local network
+        //get in network device
         var toMac = this.arpTable.get(packet.destinationIP);
+        if (toMac == undefined) {
+            // get out of network router
+            toMac = this.arpTable.get(networkIP);
+        }
         if (toMac === undefined) {
-            var sendIP = netMap.get(networkIP);
-            console.log(sendIP);
+            var sendMac = netMap.get(networkIP);
+            console.log(sendMac);
             //TODO : mac Adress
-            if (!sendIP || ipAddress.isNull(sendIP)) {
+            if (!sendMac || ipAddress.isNull(sendMac)) {
                 packet.status = status.FAILED;
                 return false;
             }
             // send to next Network
             packet.status = status.SUCCESS;
-            packet.travelNetwork(this.macAdress, sendIP);
+            packet.travelNetwork(this.macAdress, sendMac);
             return true;
         }
         var toDevice = this.networkDevices.get(toMac);
         if (toDevice === undefined) {
-            packet.status = status.FAILED;
-            return false;
+            // in a network with a direct connection
+            packet.status = status.SUCCESS;
+            packet.travelNetwork(this.macAdress, toMac);
+            return true;
         }
         toDevice.receiveAndHandlePacket(packet);
         packet.status = status.TERMINATED_SUCCESS;
-        packet.sourceMac = this.macAdress;
-        packet.destinationMac = toMac;
+        packet.travelNetwork(this.macAdress, toMac);
         return false;
     }
 }
@@ -280,7 +282,7 @@ export class Packet {
             case status.PENDING:
                 return "Packet{id: " + this.id + "} hasn't started to travel";
             case status.TERMINATED_SUCCESS:
-                return "Packet{id: " + this.id + "} successfully arrived at host " + this.sourceMac;
+                return "Packet{id: " + this.id + "} successfully arrived at host " + this.destinationMac;
             case status.FAILED:
                 return "Packet{id: " + this.id + "} failed at: " + this.destinationMac;
             case status.SUCCESS:
