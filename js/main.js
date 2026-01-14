@@ -280,8 +280,8 @@ function renderPacketModal() {
 function updatePacketModal(targetIP, sourceIP, sourceMac, targetMac) {
     packetModalState.targetIp = targetIP;
     packetModalState.sourceIp = sourceIP;
-    packetModalState.targetMac = targetMac;
     packetModalState.sourceMac = sourceMac;
+    packetModalState.targetMac = targetMac;
 }
 function activateEditMode() {
     if (connectingMode && connStartCell != null) {
@@ -348,5 +348,9 @@ export function stepTick() {
         }
         Utils.addLine(packet.formatMessage());
     }
+}
+export function clearLog() {
+    Utils.clearLog();
+    coreState.removeInactivePackets();
 }
 //# sourceMappingURL=main.js.map

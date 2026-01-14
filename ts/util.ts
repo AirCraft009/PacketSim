@@ -62,7 +62,7 @@ export function checkValidRouterIP(routerIp: string | null): boolean {
 export function addLine(text: string) {
 
   const log = document.getElementById("log") as any;
-  const container = document.getElementById("log-container") as any;
+  const container = document.getElementById("log-box") as any;
   const atBottom =
     container.scrollTop + container.clientHeight >= container.scrollHeight - 5;
 
@@ -78,7 +78,7 @@ export function addLine(text: string) {
 
 export function addPacket(packet: Packet) {
   const log = document.getElementById("log") as any;
-  const container = document.getElementById("log-container") as any;
+  const container = document.getElementById("log-box") as any;
   const atBottom =
     container.scrollTop + container.clientHeight >= container.scrollHeight - 5;
 
@@ -116,4 +116,9 @@ export function addPacket(packet: Packet) {
   if (atBottom) {
     container.scrollTop = container.scrollHeight;
   }
+}
+
+export function clearLog() {
+  const log = document.getElementById("log") as any;
+  log.innerHTML = "";
 }

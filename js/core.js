@@ -11,10 +11,10 @@ export class CoreState {
     constructor() {
         this.unconnectedComponents = new Map();
         this.networks = new Map();
-        this.logicalNetworkTopology = new Array();
+        this.logicalNetworkTopology = [];
         this.connectionMap = new Map();
-        this.activePackets = new Array();
-        this.allPackets = new Array();
+        this.activePackets = [];
+        this.allPackets = [];
     }
     addComponent(type) {
         // Create a new component with a default IP of
@@ -147,7 +147,7 @@ export class CoreState {
             // packet uses the fromNetwork.macAdress as source 
             // even when it comes from a in network device 
             // to make the handling easier by allowing the router to be found by getComponentByMac
-            var packet = new Packet(data, toIp, fromNetwork.networkIp.toString(), fromNetwork.macAdress, fromNetwork.macAdress);
+            var packet = new Packet(data, toIp, fromNetwork.networkIp.toString(), fromMac, fromNetwork.macAdress);
             this.allPackets.push(packet);
             this.activePackets.push(this.allPackets.length - 1);
             return packet;
@@ -173,8 +173,7 @@ export class CoreState {
         for (const packet_index of this.activePackets) {
             if (this.sendPacket(this.allPackets[packet_index])) {
             }
-            ;
-            sentPackets.push(packet_index);
+            sentPackets.push(this.allPackets[packet_index].id);
         }
         return sentPackets;
     }
@@ -250,6 +249,14 @@ export class CoreState {
             networkMap.set(node.ip, routemac);
         }
         return networkMap;
+    }
+    removeInactivePackets() {
+        var currentPackets = new Array();
+        for (const packetIndex of this.activePackets) {
+            currentPackets.push(this.allPackets[packetIndex]);
+        }
+        this.allPackets = currentPackets;
+        this.activePackets = Array.from({ length: currentPackets.length }, (_, i) => i);
     }
 }
 //# sourceMappingURL=core.js.map

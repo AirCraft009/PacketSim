@@ -48,7 +48,7 @@ export function checkValidRouterIP(routerIp) {
 }
 export function addLine(text) {
     const log = document.getElementById("log");
-    const container = document.getElementById("log-container");
+    const container = document.getElementById("log-box");
     const atBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 5;
     const line = document.createElement("div");
     line.className = "log-line";
@@ -60,7 +60,7 @@ export function addLine(text) {
 }
 export function addPacket(packet) {
     const log = document.getElementById("log");
-    const container = document.getElementById("log-container");
+    const container = document.getElementById("log-box");
     const atBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 5;
     const line = document.createElement("div");
     const linkPacket = document.createElement("a");
@@ -90,5 +90,9 @@ export function addPacket(packet) {
     if (atBottom) {
         container.scrollTop = container.scrollHeight;
     }
+}
+export function clearLog() {
+    const log = document.getElementById("log");
+    log.innerHTML = "";
 }
 //# sourceMappingURL=util.js.map

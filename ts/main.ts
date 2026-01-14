@@ -351,8 +351,8 @@ function renderPacketModal(){
 function updatePacketModal(targetIP : ip, sourceIP : ip, sourceMac : mac, targetMac : mac) {
     packetModalState.targetIp = targetIP;
     packetModalState.sourceIp = sourceIP;
-    packetModalState.targetMac = targetMac;
     packetModalState.sourceMac = sourceMac;
+    packetModalState.targetMac = targetMac;
 }
 
 
@@ -430,4 +430,9 @@ export function stepTick(){
     }
     Utils.addLine(packet.formatMessage());
   }
+}
+
+export function clearLog(){
+  Utils.clearLog();
+  coreState.removeInactivePackets();
 }
