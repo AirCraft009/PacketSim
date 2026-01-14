@@ -147,7 +147,7 @@ export class CoreState {
             // packet uses the fromNetwork.macAdress as source 
             // even when it comes from a in network device 
             // to make the handling easier by allowing the router to be found by getComponentByMac
-            let packet = new Packet(data, toIp, fromNetwork.networkIp.toString(), fromMac, fromNetwork.macAdress);
+            let packet = new Packet(data, toIp, fromComp.ipAddress.toString(), fromMac, fromNetwork.macAdress);
             this.allPackets.push(packet);
             this.activePackets.push(this.allPackets.length - 1);
             return packet;
@@ -157,23 +157,29 @@ export class CoreState {
     sendPacket(packet) {
         let fromRouter = this.getComponentByMac(packet.destinationMac);
         if (!fromRouter) {
-            return false;
+            return [false, ""];
         }
         // TODO: find a way to cache the network map in network and only updating when necesarry
-        if (!this.networks.get(fromRouter.ipAddress.toString()).sendPacket(packet, this.makeNetworkMap(fromRouter.ipAddress.toString()))) {
+        let data = this.networks.get(fromRouter.ipAddress.toString()).sendPacket(packet, this.makeNetworkMap(fromRouter.ipAddress.toString()));
+        if (!data[0]) {
             //not active anymore 
             this.activePackets = this.activePackets.filter(packet_id => packet_id !== packet.id);
-            return false;
+            return data;
         }
         ;
-        return true;
+        return [true, ""];
     }
     stepTick() {
         const sentPackets = new Array();
         for (const packet_index of this.activePackets) {
-            if (this.sendPacket(this.allPackets[packet_index])) {
+            let activePacket = this.allPackets[packet_index];
+            let data = this.sendPacket(activePacket);
+            if (!data[0]) {
+                if (data[1] != "") {
+                    this.RegisterPacket(activePacket.destinationMac, activePacket.sourceIP, data[1]);
+                }
             }
-            sentPackets.push(this.allPackets[packet_index].id);
+            sentPackets.push(activePacket.id);
         }
         return sentPackets;
     }

@@ -39,7 +39,8 @@ const packetModalState = {
   targetIp: "192.168.1.0",
   sourceIp: "192.168.1.0",
   sourceMac: "aa:bb:cc:dd:ee:ff",
-  targetMac: "aa:bb:cc:dd:ee:ff", 
+  targetMac: "aa:bb:cc:dd:ee:ff",
+  textContent: "Hello, World!"
 }
 
 /**
@@ -301,10 +302,11 @@ function enableLogClick(){
       let packetId : string = editable.getAttribute("id");
       let packet = coreState.getPacketInfo(parseInt(packetId));
       if (!packet){
+        console.error("log packet id not found")
         return
       }
       
-      updatePacketModal(packet.destinationIP, packet.sourceIP, packet.sourceMac, packet.destinationMac)
+      updatePacketModal(packet.destinationIP, packet.sourceIP, packet.sourceMac, packet.destinationMac, packet.data)
       renderPacketModal()
     })
   })
@@ -348,11 +350,12 @@ function renderPacketModal(){
   })
 }
 
-function updatePacketModal(targetIP : ip, sourceIP : ip, sourceMac : mac, targetMac : mac) {
+function updatePacketModal(targetIP : ip, sourceIP : ip, sourceMac : mac, targetMac : mac, data : string) {
     packetModalState.targetIp = targetIP;
     packetModalState.sourceIp = sourceIP;
     packetModalState.sourceMac = sourceMac;
     packetModalState.targetMac = targetMac;
+    packetModalState.textContent = data;
 }
 
 

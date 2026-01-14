@@ -25,6 +25,7 @@ const packetModalState = {
     sourceIp: "192.168.1.0",
     sourceMac: "aa:bb:cc:dd:ee:ff",
     targetMac: "aa:bb:cc:dd:ee:ff",
+    textContent: "Hello, World!"
 };
 /**
  * Initialize document listeners for drag and drop and input disabling
@@ -237,9 +238,10 @@ function enableLogClick() {
             let packetId = editable.getAttribute("id");
             let packet = coreState.getPacketInfo(parseInt(packetId));
             if (!packet) {
+                console.error("log packet id not found");
                 return;
             }
-            updatePacketModal(packet.destinationIP, packet.sourceIP, packet.sourceMac, packet.destinationMac);
+            updatePacketModal(packet.destinationIP, packet.sourceIP, packet.sourceMac, packet.destinationMac, packet.data);
             renderPacketModal();
         });
     });
@@ -277,11 +279,12 @@ function renderPacketModal() {
         }
     });
 }
-function updatePacketModal(targetIP, sourceIP, sourceMac, targetMac) {
+function updatePacketModal(targetIP, sourceIP, sourceMac, targetMac, data) {
     packetModalState.targetIp = targetIP;
     packetModalState.sourceIp = sourceIP;
     packetModalState.sourceMac = sourceMac;
     packetModalState.targetMac = targetMac;
+    packetModalState.textContent = data;
 }
 function activateEditMode() {
     if (connectingMode && connStartCell != null) {

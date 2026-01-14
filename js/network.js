@@ -222,24 +222,24 @@ export class Network {
             //TODO : mac Adress
             if (!sendMac || ipAddress.isNull(sendMac)) {
                 packet.status = status.FAILED;
-                return false;
+                return [false, ""];
             }
             // send to next Network
             packet.status = status.SUCCESS;
             packet.travelNetwork(this.macAdress, sendMac);
-            return true;
+            return [true, ""];
         }
         let toDevice = this.networkDevices.get(toMac);
         if (toDevice === undefined) {
             // in a network with a direct connection
             packet.status = status.SUCCESS;
             packet.travelNetwork(this.macAdress, toMac);
-            return true;
+            return [true, ""];
         }
-        toDevice.receiveAndHandlePacket(packet);
+        var data = toDevice.receiveAndHandlePacket(packet);
         packet.status = status.TERMINATED_SUCCESS;
         packet.travelNetwork(this.macAdress, toMac);
-        return false;
+        return [false, data];
     }
 }
 export var status;
@@ -309,13 +309,12 @@ export class Komponent {
     }
     receiveAndHandlePacket(packet) {
         if (this.type !== "server") {
-            return null;
+            return "";
         }
         //TODO: implement packet handling and return more than a simple echo response back to the sender
         return packet.data;
     }
 }
-;
 /**
  * Node class for Dijkstra's algorithm
  */

@@ -243,7 +243,7 @@ export class Network {
     }
 
 
-    sendPacket(packet : Packet, netMap : Map<ip, ip>) : boolean{
+    sendPacket(packet : Packet, netMap : Map<ip, ip>) : [boolean, string]{
         let networkIP = ipAddress.toNetwork(packet.destinationIP);
         // handle packet sending in local network
 
@@ -260,12 +260,12 @@ export class Network {
             //TODO : mac Adress
             if(!sendMac || ipAddress.isNull(sendMac)) {
                 packet.status = status.FAILED;
-                return false;
+                return [false, ""];
             }
             // send to next Network
             packet.status = status.SUCCESS;
             packet.travelNetwork(this.macAdress, sendMac);
-            return true;
+            return [true, ""];
         }
 
         let toDevice = this.networkDevices.get(toMac);
@@ -273,13 +273,13 @@ export class Network {
             // in a network with a direct connection
             packet.status = status.SUCCESS;
             packet.travelNetwork(this.macAdress, toMac);
-            return true
+            return [true, ""]
         }
 
-        toDevice.receiveAndHandlePacket(packet);
+        var data = toDevice.receiveAndHandlePacket(packet);
         packet.status = status.TERMINATED_SUCCESS;
         packet.travelNetwork(this.macAdress, toMac);
-        return false;
+        return [false, data];
     }
 }
 
@@ -359,15 +359,15 @@ export class Komponent {
     this.inNetwork = type === "router";
   }
 
-  receiveAndHandlePacket(packet : Packet) : string | null {
+  receiveAndHandlePacket(packet : Packet) : string {
     if(this.type !== "server") {
-        return null;
+        return "";
     }
     //TODO: implement packet handling and return more than a simple echo response back to the sender
     return packet.data;
   }
 
-};
+}
 
 /**
  * Node class for Dijkstra's algorithm
