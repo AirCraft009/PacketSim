@@ -11,15 +11,15 @@ declare global {
 }
 
 const modal = new window.bootstrap.Modal(getModalEL());
-const modalPacket = new window.bootstrap.Modal(getPacketModalEl());
+//const modalPacket = new window.bootstrap.Modal(getPacketModalEl());
 
 
 
 
-var connectingMode = false;
-var connStartCell: HTMLElement | null = null;
-var connStartIndex: number = 0;
-var selected = false;
+let connectingMode = false;
+let connStartCell: HTMLElement | null = null;
+let connStartIndex: number = 0;
+let selected = false;
 const IPToIndexMap: Map<mac, number> = new Map();
 const indexToMacMap: Map<number, mac> = new Map();
 const coreState = new Core.CoreState();
@@ -166,7 +166,7 @@ function dropListener(cell: HTMLElement, index: number) {
     
     if(type === "router") {
       getRouterIpModal().then((ipString) => {
-        var routerMac = coreState.addRouter(ipString);
+        let routerMac = coreState.addRouter(ipString);
         if(routerMac !== false) {
           indexToMacMap.set(index, routerMac[0]);
           IPToIndexMap.set(routerMac[1], index);
@@ -176,7 +176,7 @@ function dropListener(cell: HTMLElement, index: number) {
       });
       return;
     }
-    var comp = coreState.addComponent(type);
+    let comp = coreState.addComponent(type);
     indexToMacMap.set(index, comp[0]);
     IPToIndexMap.set(comp[1], index);
   });
@@ -186,7 +186,7 @@ function resetHighlight() {
   if (connStartCell == null) return;
   connStartCell.style.backgroundColor = "";
   selected = false;
-  var sendBtn =document.querySelector<HTMLButtonElement>("button.btn.btn-dark")!;
+  let sendBtn =document.querySelector<HTMLButtonElement>("button.btn.btn-dark")!;
   sendBtn.disabled = true;
 }
 
@@ -298,13 +298,13 @@ function enableLogClick(){
       if(e.button !== 0){
         return;
       }
-      var packetId : string = editable.getAttribute("id");
-      var packet = coreState.getPacketInfo(parseInt(packetId));
+      let packetId : string = editable.getAttribute("id");
+      let packet = coreState.getPacketInfo(parseInt(packetId));
       if (!packet){
         return
       }
       
-      updatePacketModal(packet.destinationIP, packet.sourceIP, packet.destinationMac, packet.sourceMac)
+      updatePacketModal(packet.destinationIP, packet.sourceIP, packet.sourceMac, packet.destinationMac)
       renderPacketModal()
     })
   })
@@ -320,7 +320,7 @@ function openEditBox() {
 }
 
 function updateState() {
-  var componentState = coreState.getStateOfComponent(indexToMacMap.get(connStartIndex)!);
+  let componentState = coreState.getStateOfComponent(indexToMacMap.get(connStartIndex)!);
   state.type = componentState[0];
   state.ip = componentState[1];
   state.mac = componentState[2];
@@ -413,7 +413,7 @@ export function sendPacket() {
     return;
   }
   
-  var packet = coreState.RegisterPacket(indexToMacMap.get(connStartIndex)!, targetIp, data);
+  let packet = coreState.RegisterPacket(indexToMacMap.get(connStartIndex)!, targetIp, data);
   if (!packet){
     return;
   }
@@ -422,9 +422,9 @@ export function sendPacket() {
 }
 
 export function stepTick(){
-  var packet_indexes = coreState.stepTick();
-  for (var i of packet_indexes) {
-    var packet = coreState.getPacketInfo(i);
+  let packet_indexes = coreState.stepTick();
+  for (let i of packet_indexes) {
+    let packet = coreState.getPacketInfo(i);
     if (!packet) {
       continue;
     }

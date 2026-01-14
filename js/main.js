@@ -2,11 +2,11 @@ import * as Utils from "./util.js";
 import * as Core from "./core.js";
 import { ipAddress } from "./network.js";
 const modal = new window.bootstrap.Modal(getModalEL());
-const modalPacket = new window.bootstrap.Modal(getPacketModalEl());
-var connectingMode = false;
-var connStartCell = null;
-var connStartIndex = 0;
-var selected = false;
+//const modalPacket = new window.bootstrap.Modal(getPacketModalEl());
+let connectingMode = false;
+let connStartCell = null;
+let connStartIndex = 0;
+let selected = false;
 const IPToIndexMap = new Map();
 const indexToMacMap = new Map();
 const coreState = new Core.CoreState();
@@ -119,7 +119,7 @@ function dropListener(cell, index) {
         cell.appendChild(clone);
         if (type === "router") {
             getRouterIpModal().then((ipString) => {
-                var routerMac = coreState.addRouter(ipString);
+                let routerMac = coreState.addRouter(ipString);
                 if (routerMac !== false) {
                     indexToMacMap.set(index, routerMac[0]);
                     IPToIndexMap.set(routerMac[1], index);
@@ -129,7 +129,7 @@ function dropListener(cell, index) {
             });
             return;
         }
-        var comp = coreState.addComponent(type);
+        let comp = coreState.addComponent(type);
         indexToMacMap.set(index, comp[0]);
         IPToIndexMap.set(comp[1], index);
     });
@@ -139,7 +139,7 @@ function resetHighlight() {
         return;
     connStartCell.style.backgroundColor = "";
     selected = false;
-    var sendBtn = document.querySelector("button.btn.btn-dark");
+    let sendBtn = document.querySelector("button.btn.btn-dark");
     sendBtn.disabled = true;
 }
 function removeVisual(i, cell) {
@@ -234,12 +234,12 @@ function enableLogClick() {
             if (e.button !== 0) {
                 return;
             }
-            var packetId = editable.getAttribute("id");
-            var packet = coreState.getPacketInfo(parseInt(packetId));
+            let packetId = editable.getAttribute("id");
+            let packet = coreState.getPacketInfo(parseInt(packetId));
             if (!packet) {
                 return;
             }
-            updatePacketModal(packet.destinationIP, packet.sourceIP, packet.destinationMac, packet.sourceMac);
+            updatePacketModal(packet.destinationIP, packet.sourceIP, packet.sourceMac, packet.destinationMac);
             renderPacketModal();
         });
     });
@@ -253,7 +253,7 @@ function openEditBox() {
     renderEditBox();
 }
 function updateState() {
-    var componentState = coreState.getStateOfComponent(indexToMacMap.get(connStartIndex));
+    let componentState = coreState.getStateOfComponent(indexToMacMap.get(connStartIndex));
     state.type = componentState[0];
     state.ip = componentState[1];
     state.mac = componentState[2];
@@ -332,7 +332,7 @@ export function sendPacket() {
         alert("Invalid target IP address.");
         return;
     }
-    var packet = coreState.RegisterPacket(indexToMacMap.get(connStartIndex), targetIp, data);
+    let packet = coreState.RegisterPacket(indexToMacMap.get(connStartIndex), targetIp, data);
     if (!packet) {
         return;
     }
@@ -340,9 +340,9 @@ export function sendPacket() {
     enableLogClick();
 }
 export function stepTick() {
-    var packet_indexes = coreState.stepTick();
-    for (var i of packet_indexes) {
-        var packet = coreState.getPacketInfo(i);
+    let packet_indexes = coreState.stepTick();
+    for (let i of packet_indexes) {
+        let packet = coreState.getPacketInfo(i);
         if (!packet) {
             continue;
         }

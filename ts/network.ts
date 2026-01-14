@@ -36,7 +36,7 @@ export class ipAddress {
     }
 
     getNetworkPart() {
-        var clone = this.clone();
+        let clone = this.clone();
         clone.modifyOctet(3, 0);
         return new ipAddress(clone.toString());
     }
@@ -72,7 +72,7 @@ export class ipAddress {
     }
 
     constructOctets(ipString: string) {
-        var stringOctets = ipString.split(".");
+        let stringOctets = ipString.split(".");
         if (stringOctets.length !== 4) {
             throw new Error("Invalid ip adress passed:" + ipString);
         }
@@ -218,7 +218,7 @@ export class Network {
     
 
     removeDevice(macAddress: string) : boolean {
-        var ipComp = this.networkDevices.get(macAddress);
+        let ipComp = this.networkDevices.get(macAddress);
         if(this.networkDevices.delete(macAddress)) {
             this.numDevices--;
             this.arpTable.delete(ipComp!.ipAddress.toString());
@@ -244,17 +244,17 @@ export class Network {
 
 
     sendPacket(packet : Packet, netMap : Map<ip, ip>) : boolean{
-        var networkIP = ipAddress.toNetwork(packet.destinationIP);
+        let networkIP = ipAddress.toNetwork(packet.destinationIP);
         // handle packet sending in local network
 
         //get in network device
-        var toMac = this.arpTable.get(packet.destinationIP);
+        let toMac = this.arpTable.get(packet.destinationIP);
         if(toMac == undefined){
             // get out of network router
             toMac = this.arpTable.get(networkIP);
         }
         if (toMac === undefined) {
-            var sendMac = netMap.get(networkIP);
+            let sendMac = netMap.get(networkIP);
             console.log(sendMac);
             
             //TODO : mac Adress
@@ -268,7 +268,7 @@ export class Network {
             return true;
         }
 
-        var toDevice = this.networkDevices.get(toMac);
+        let toDevice = this.networkDevices.get(toMac);
         if (toDevice === undefined) {
             // in a network with a direct connection
             packet.status = status.SUCCESS;
