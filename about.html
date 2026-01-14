@@ -36,6 +36,67 @@
 
 
   <main class="container my-5">
+
+    <!-- How the simulator works-->
+    <section class="mb-5">
+      <h2 class="mb-4">How the Simulator Works</h2>
+
+      <p class="text-muted mb-4">
+        The simulator follows a simple workflow designed to make network behavior
+        observable rather than realistic.
+      </p>
+
+      <div class="row g-4">
+        <div class="col-md-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">1. Build</h5>
+              <p class="card-text">
+                Place routers and hosts to define subnets.
+                Each network must have exactly one router acting as its gateway.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">2. Send</h5>
+              <p class="card-text">
+                Create packets manually from PCs.
+                This keeps traffic generation explicit and easy to follow.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">3. Route</h5>
+              <p class="card-text">
+                Routers calculate paths automatically using shortest-path logic
+                and forward packets accordingly.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">4. Observe</h5>
+              <p class="card-text">
+                Watch packets traverse the network step by step,
+                making routing decisions visible.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Limitations -->
     <section class="mb-5">
       <h2 class="mb-3">Simulator Limitations</h2>
@@ -48,9 +109,6 @@
         <li class="list-group-item">Each subnet requires its own router as a gateway.</li>
         <li class="list-group-item">No Layer 2 behavior is simulated.</li>
         <li class="list-group-item">Switches are intentionally omitted.</li>
-        <li class="list-group-item">
-          Packet loss is artificially generated and does not reflect real-world behavior.
-        </li>
         <li class="list-group-item">
           Advanced routing protocols, security mechanisms, and performance optimizations
           are not implemented.
