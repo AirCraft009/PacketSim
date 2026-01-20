@@ -264,14 +264,14 @@ export class Packet {
     destinationMac;
     sourceMac;
     status;
-    constructor(data, destinationIP, sourceIP, sourceMac, destinationMac) {
+    constructor(data, destinationIP, sourceIP, sourceMac, destinationMac, id) {
         this.data = data;
         this.destinationIP = destinationIP;
         this.sourceIP = sourceIP;
         this.destinationMac = destinationMac;
         this.sourceMac = sourceMac;
         this.status = status.PENDING;
-        this.id = PacketId.getNextId();
+        this.id = id;
     }
     travelNetwork(sourceMac, destinationMac) {
         this.sourceMac = sourceMac;

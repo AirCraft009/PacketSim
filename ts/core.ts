@@ -1,4 +1,4 @@
-import { DijkstraEdge, DijkstraNode, ipAddress, Komponent, macAddress, ip, mac, Network, Packet, status } from "./network.js";
+import { DijkstraEdge, DijkstraNode, ipAddress, Komponent, ip, mac, Network, Packet } from "./network.js";
 import { checkValidRouterIP } from "./util.js";
 
 export class CoreState {
@@ -147,10 +147,6 @@ export class CoreState {
         }        
     }
 
-    addConnected(start: Komponent){
-        start.connections
-    }
-
     getStateOfComponent(mac: mac) : string[] {
         let component = this.getComponentByMac(mac);
         if (component === null) {
@@ -181,7 +177,7 @@ export class CoreState {
             // packet uses the fromNetwork.macAdress as source 
             // even when it comes from a in network device 
             // to make the handling easier by allowing the router to be found by getComponentByMac
-            let packet = new Packet(data, toIp, fromComp.ipAddress.toString(), fromMac, fromNetwork.macAdress);
+            let packet = new Packet(data, toIp, fromComp.ipAddress.toString(), fromMac, fromNetwork.macAdress, this.allPackets.length);
             this.allPackets.push(packet);
             this.activePackets.push(this.allPackets.length-1)
             return packet;
@@ -195,12 +191,13 @@ export class CoreState {
             return [false, ""];
         }
         // TODO: find a way to cache the network map in network and only updating when necesarry
-        let data = this.networks.get(fromRouter.ipAddress.toString())!.sendPacket(packet, this.makeNetworkMap(fromRouter.ipAddress.toString()))
+
+        let data = this.networks.get(ipAddress.toNetwork(fromRouter.ipAddress.toString()))!.sendPacket(packet, this.makeNetworkMap(fromRouter.ipAddress.toString()))
         if(!data[0]){
             //not active anymore 
-            this.activePackets = this.activePackets.filter(packet_id => packet_id !== packet.id);
+            this.activePackets = this.activePackets.filter(packet_index => this.allPackets[packet_index].id !== packet.id);
             return data;
-        };
+        }
         return [true, ""];
     }
 
@@ -303,7 +300,6 @@ export class CoreState {
                 prevNode = prevNode!.previous;
                 routemac = prevNode!.mac;
             }
-            console.log(node.ip, prevNode!.ip);
             networkMap.set(node.ip, routemac);
         }
         return networkMap;
@@ -311,11 +307,12 @@ export class CoreState {
 
     removeInactivePackets() {
         let currentPackets = new Array<Packet>();
-        for (const packetIndex of this.activePackets) {
-            currentPackets.push(this.allPackets[packetIndex]);
+        // iterable of active packets is iterated over so any changes to activePackets won't affect the loop
+        for (const [index, packetIndex] of this.activePackets.entries()) {
+            let relPacket = this.allPackets[packetIndex];
+            relPacket.id = index;
+            currentPackets.push(relPacket);
+            this.activePackets[index] = index
         }
-
-        this.allPackets = currentPackets;
-        this.activePackets = Array.from({ length: currentPackets.length}, (_, i) => i);
     }
 }

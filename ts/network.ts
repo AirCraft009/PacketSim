@@ -308,14 +308,14 @@ export class Packet{
     sourceMac: mac;
     status : status;
 
-    constructor(data : string, destinationIP : ip, sourceIP : ip, sourceMac : mac, destinationMac : mac) {
+    constructor(data : string, destinationIP : ip, sourceIP : ip, sourceMac : mac, destinationMac : mac, id : number) {
         this.data = data;
         this.destinationIP = destinationIP;
         this.sourceIP = sourceIP;
         this.destinationMac = destinationMac;
         this.sourceMac = sourceMac;
         this.status = status.PENDING;
-        this.id = PacketId.getNextId();
+        this.id = id;
     }
 
     travelNetwork(sourceMac : mac, destinationMac : mac){
