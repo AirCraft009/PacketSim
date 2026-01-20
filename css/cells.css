@@ -93,7 +93,7 @@ body {
     height: 300px;
     overflow-y: auto;
     padding: 6px;
-    font-family: monospace; /* or Minecraftia */
+    font-family: monospace;
     font-size: 14px;
     border: #000 solid;
     border-radius: 10px;

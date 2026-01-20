@@ -1,8 +1,8 @@
+// main.ts combines input & visual(unnecessary to split them up for such a small project)
+
 import * as Utils from "./util.js"
 import * as Core from "./core.js";
 import { ipAddress, mac, ip } from "./network.js";
-
-
 
 declare global {
   interface Window {
@@ -15,12 +15,17 @@ const modal = new window.bootstrap.Modal(getModalEL());
 
 
 
+// global mutables
 
+// has on component been selected and will connect to the next clicked comp
 let connectingMode = false;
+// where did the connection originateFrom
 let connStartCell: HTMLElement | null = null;
+// from 0 - side * side what index does the cell have (for Utils.drawLine() because it adds the index for easier removal)
 let connStartIndex: number = 0;
+// is smth selected(highlighted blue)
+// TODO: find a better sol so adding other highlights is easier
 let selected = false;
-const IPToIndexMap: Map<mac, number> = new Map();
 const indexToMacMap: Map<number, mac> = new Map();
 const coreState = new Core.CoreState();
 
@@ -166,7 +171,6 @@ function dropListener(cell: HTMLElement, index: number) {
         let routerMac = coreState.addRouter(ipString);
         if(routerMac !== false) {
           indexToMacMap.set(index, routerMac[0]);
-          IPToIndexMap.set(routerMac[1], index);
           return;
         }
         removeVisual(index, cell);
@@ -175,7 +179,6 @@ function dropListener(cell: HTMLElement, index: number) {
     }
     let comp = coreState.addComponent(type);
     indexToMacMap.set(index, comp[0]);
-    IPToIndexMap.set(comp[1], index);
   });
 }
 
