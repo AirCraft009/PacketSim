@@ -27,7 +27,7 @@ let connStartIndex: number = 0;
 // TODO: find a better sol so adding other highlights is easier
 let selected = false;
 // the logical sim works with macAddresses
-// so a cell index to mac map is used to query for data from the coreState
+// so a cell index to Mac map is used to query for data from the coreState
 const indexToMacMap: Map<number, mac> = new Map();
 // the logical simulation
 // exchanges information that should be rendered
@@ -352,7 +352,8 @@ function initDocumentDrag() {
 }
 
 /**
- *
+ *  disables right-clicking \
+ *  newlines in the editable fields of the component editor
  */
 function disableInput() {
   window.addEventListener("contextmenu", (e) => {
@@ -375,6 +376,10 @@ function disableInput() {
   });
 }
 
+/**
+ * if blue part of packet-log-entry is clicked\
+ * open the packet modal and render the data of the packet
+ */
 function enableLogClick(){
   document.querySelectorAll(".modal-editable").forEach((editable: any) =>{
     editable.addEventListener("mousedown", (e: MouseEvent) =>{
@@ -394,6 +399,10 @@ function enableLogClick(){
   })
 }
 
+/**
+ * when a device is selected\\in focus\
+ * it updates the component-editor
+ */
 function openEditBox() {
   if (!selected || connStartCell == null) {
     return;
@@ -402,6 +411,10 @@ function openEditBox() {
   renderEditBox();
 }
 
+
+/**
+ * Updates the state dict wit the values of the selected device
+ */
 function updateState() {
   let componentState = coreState.getStateOfComponent(indexToMacMap.get(connStartIndex)!);
   state.type = componentState[0];
@@ -411,8 +424,10 @@ function updateState() {
   state.gateway = componentState[4];
 }
 
-
-// renders new information to the edit box
+/**
+ * Takes values from the state dict\
+ * writes them into the fields with the same data-key
+ */
 function renderEditBox() {
   document.querySelectorAll(".editable").forEach((el: any) => {
     const key = el.dataset.key as string;
@@ -422,6 +437,9 @@ function renderEditBox() {
   });
 }
 
+/**
+ *  Does the same as renderEditBox() just with the packet data
+ */
 function renderPacketModal(){
   document.querySelectorAll(".modal-editable").forEach((el : any) => {
     const key = el.dataset.key as string;
@@ -431,6 +449,10 @@ function renderPacketModal(){
   })
 }
 
+/**
+ * Does the same as updateState just takes args\
+ * Because data has to be queried from the coreState
+ */
 function updatePacketModal(targetIP : ip, sourceIP : ip, sourceMac : mac, targetMac : mac, data : string) {
     packetModalState.targetIp = targetIP;
     packetModalState.sourceIp = sourceIP;
@@ -440,6 +462,10 @@ function updatePacketModal(targetIP : ip, sourceIP : ip, sourceMac : mac, target
 }
 
 
+/**
+ * opens the EditBox\
+ * enables the sendPacket button\
+ */
 function activateEditMode() {
   if (connectingMode && connStartCell != null) {
     connStartCell.style.backgroundColor = "blue";
@@ -449,12 +475,24 @@ function activateEditMode() {
   }
 }
 
+/**
+ * visually and logically adds a device
+ */
 function addConnection(cell: HTMLElement, index: number) {
   // connStartCell was alr checked for null before calling this function
   Utils.drawLine(connStartCell as HTMLElement, cell, connStartIndex, index);
   coreState.connectComponents(indexToMacMap.get(connStartIndex)!, indexToMacMap.get(index)!);
 }
 
+/**
+ * checks if\
+ * it should be connecting\
+ * if the devices are the same\
+ * if any of the cells is empty\
+ * queries if coreState alr has the connection entered\
+ * @param fromIndex start-device of the conn
+ * @param toIndex end-device of the conn
+ */
 function isValidConnection(fromIndex: number, toIndex: number) {
   if (connectingMode) {
     // check for connection to self
@@ -469,6 +507,10 @@ function isValidConnection(fromIndex: number, toIndex: number) {
   return false;
 }
 
+/**
+ * used for checking if clicks are valid
+ * @param cell
+ */
 function hasChild(cell: HTMLElement): boolean {
   if (!cell.firstChild) {
     connectingMode = false;
@@ -477,7 +519,15 @@ function hasChild(cell: HTMLElement): boolean {
   return true;
 }
 
-
+/**
+ * triggered when sendPacket-button is pressed\
+ * checks if target ip and packet data is entered\
+ * checks if the target ip is valid\
+ *
+ * then hands the responsibility to coreState\
+ *
+ * lastly it sends the new Packet message and enables the clickability
+ */
 export function sendPacket() {
   if (!selected) {
     return;
@@ -505,6 +555,12 @@ export function sendPacket() {
   enableLogClick()
 }
 
+/**
+ * triggers when the stepTick-button is clicked\
+ * lets coreState handle the packets changing\
+ *
+ * then logs the movement\
+ */
 export function stepTick(){
   let packet_indexes = coreState.stepTick();
   for (let i of packet_indexes) {
@@ -516,6 +572,10 @@ export function stepTick(){
   }
 }
 
+/**
+ * visually clears the log\
+ * removes all not traveling(activate) packets in coreState
+ */
 export function clearLog(){
   Utils.clearLog();
   coreState.removeInactivePackets();
