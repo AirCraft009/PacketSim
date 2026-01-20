@@ -1,5 +1,9 @@
 # Packetsim
 
+## Get-Packages
+- run npm ci
+- all relevant packages(2) should be loaded
+
 ## Overwiev
 
 - Simulate a Network with Routers & Hosts
