@@ -60,10 +60,6 @@ function getModalEL(){
   return document.getElementById('textModal') as HTMLElement;
 }
 
-function getPacketModalEl(){
-  return document.getElementById('packetModal') as HTMLElement;
-}
-
 
 
 
@@ -72,7 +68,7 @@ function getPacketModalEl(){
  * drag and drop, click to connect/components\
  * right click to remove component
  * 
- * @param {ammount of cells} n 
+ * @param n number of cells
  */
 export function createGrid(n: number) {
 
@@ -132,7 +128,7 @@ function boilerDragListeners(cell: HTMLElement) {
   });
 }
 
-function removeAtrributesFromClone(clone: HTMLElement) {
+function removeAttributesFromClone(clone: HTMLElement) {
   clone.removeAttribute("id");
   clone.removeAttribute("data-template");
 
@@ -161,7 +157,7 @@ function dropListener(cell: HTMLElement, index: number) {
     }
 
     const clone = template.cloneNode(true) as HTMLElement;
-    removeAtrributesFromClone(clone);
+    removeAttributesFromClone(clone);
     cell.appendChild(clone);
 
     
@@ -202,7 +198,7 @@ function removeVisual(i : number, cell : HTMLElement) {
 }
 
 function connectComponents(i: number, cell: HTMLElement) {
-  if (isvalidConnection(connStartIndex, i)) {
+  if (isValidConnection(connStartIndex, i)) {
     connectingMode = false;
     addConnection(cell, i);
     return;
@@ -277,7 +273,7 @@ function disableInput() {
     e.preventDefault();
   });
 
-  window.addEventListener("keydown", (e) => {
+  window.addEventListener("keydown", () => {
     connectingMode = false;
   });
 
@@ -314,7 +310,6 @@ function enableLogClick(){
 
 function openEditBox() {
   if (!selected || connStartCell == null) {
-    console.log("thats why!!!");
     return;
   }
   updateState();
@@ -342,7 +337,7 @@ function renderEditBox() {
 }
 
 function renderPacketModal(){
-  document.querySelectorAll(".modal-ediatble").forEach((el : any) => {
+  document.querySelectorAll(".modal-editable").forEach((el : any) => {
     const key = el.dataset.key as string;
     if (key in packetModalState){
       el.textContent = packetModalState[key as keyof typeof packetModalState];
@@ -369,21 +364,21 @@ function activateEditMode() {
 }
 
 function addConnection(cell: HTMLElement, index: number) {
-  // connstartCell was alr checked for null before calling this function
+  // connStartCell was alr checked for null before calling this function
   Utils.drawLine(connStartCell as HTMLElement, cell, connStartIndex, index);
   coreState.connectComponents(indexToMacMap.get(connStartIndex)!, indexToMacMap.get(index)!);
 }
 
-function isvalidConnection(fromindex: number, toindex: number) {
+function isValidConnection(fromIndex: number, toIndex: number) {
   if (connectingMode) {
     // check for connection to self
-    if (fromindex == toindex) return false;
+    if (fromIndex == toIndex) return false;
     // check if connection already exists
-    if(indexToMacMap.get(fromindex) === undefined || indexToMacMap.get(toindex) === undefined) {
+    if(indexToMacMap.get(fromIndex) === undefined || indexToMacMap.get(toIndex) === undefined) {
       return false;
     }
 
-    return !coreState.alreadyConnected(indexToMacMap.get(fromindex)!, indexToMacMap.get(toindex)!);
+    return !coreState.alreadyConnected(indexToMacMap.get(fromIndex)!, indexToMacMap.get(toIndex)!);
   }
   return false;
 }

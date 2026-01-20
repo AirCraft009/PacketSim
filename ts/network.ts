@@ -14,13 +14,9 @@ export class ipAddress {
         this.constructOctets(ip);
     }
 
-    isNull() {
-        return this.octets.every(octet => octet === 0);
-    }
-
     /**
      * 
-     * @param ip a correctly formed ip string if unsure check with ipAdress.checkValidIpString()
+     * @param ip a correctly formed ip string if unsure check with ipAddress.checkValidIpString()
      */
     static isNull(ip: ip){
         ip.split(".").every(octet => parseInt(octet, 10) === 0);
@@ -42,9 +38,9 @@ export class ipAddress {
     }
 
     /**
-     * Checks if all octets except the last one equal eachother.\
-     * Because all networks use a /24 subnetmask the network addr is always has a 0 in the 4th octet.\
-     * So by checking 0 - 2 we only check if it's in the same network / the hostbits are the same
+     * Checks if all octets except the last one equal each other.\
+     * Because all networks use a /24 subnet mask the network addr is always has a 0 in the 4th octet.\
+     * So by checking 0 - 2 we only check if it's in the same network / the host bits are the same
      * @param ip 
      * @returns 
      */
@@ -57,24 +53,10 @@ export class ipAddress {
         return true;
     }
 
-    /**
-     * Checks if all octets equal eachother
-     * @param ip  
-     * @returns 
-     */
-    equals(ip: ipAddress) {
-        for (let i = 0; i < this.octets.length; i++){
-            if (this.octets[i] !== ip.octets[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     constructOctets(ipString: string) {
         let stringOctets = ipString.split(".");
         if (stringOctets.length !== 4) {
-            throw new Error("Invalid ip adress passed:" + ipString);
+            throw new Error("Invalid ip address passed:" + ipString);
         }
         stringOctets.forEach(octet => {
             try{
@@ -125,7 +107,7 @@ class NextMacAddr{
             this.byte_6 = 0;
             if (this.byte_5 === 255){
                 this.byte_5 = 0;
-                //byte 4 cannot possibly overflow in our usecase
+                //byte 4 cannot possibly overflow in our use case
                 this.byte_4++;
             } else {
                 this.byte_5++;
@@ -149,16 +131,12 @@ export class macAddress {
         const fullMac = this.prefix.concat(this.specific);
         return fullMac.map(byte => byte.toString(16).padStart(2, '0')).join(':');
     }
-
-    equals(mac: macAddress) : boolean {
-        return this.specific.every((value, index) => value === mac.specific[index]);
-    }
 }
 
 export class Network {
     /**
      * 
-     * Implementation of a basic network with subnetmask 24
+     * Implementation of a basic network with subnet mask 24
      * @param {The start of the Network addr} ip
      */
     subnet: number;
@@ -166,25 +144,25 @@ export class Network {
     networkIp: ipAddress;
     numDevices: number
     // map of mac addresses to components in the network
-    networkDevices: Map<string, Komponent>;
+    networkDevices: Map<string, Component>;
     travelNodes: Array<DijkstraNode>;
-    router : Komponent;
+    router : Component;
     arpTable : Map<ip, mac>; //map of ip string to mac address string
-    macAdress : mac;
+    macAddress : mac;
 
     
     
 
-    constructor(ip: ipAddress, router: Komponent) {
+    constructor(ip: ipAddress, router: Component) {
         this.subnet = 24;
-        this.modifyOctet = 3 // 24(host-bits)/8(size of a octet)
+        this.modifyOctet = 3 // 24(host-bits)/8(size of an octet)
         this.networkIp = ip;
         this.numDevices = 0;
         this.networkDevices = new Map();
         this.router = router;
         this.travelNodes = [];
         this.arpTable = new Map();
-        this.macAdress = router.macAddress.toString();
+        this.macAddress = router.macAddress.toString();
 
     }
 
@@ -195,10 +173,10 @@ export class Network {
      * @param component
      * @returns 
      */
-    addDevice(component : Komponent) : boolean{
+    addDevice(component : Component) : boolean{
         // check if network is full
         // 32 - subnet gives the number of host bits
-        // 2^hostbits - 2 gives the number of usable addresses (we subtract 2 for network and broadcast addresses)
+        // 2^host bits - 2 gives the number of usable addresses (we subtract 2 for network and broadcast addresses)
         if (this.numDevices === Math.pow(2, 32 - this.subnet) - 2) {
             console.error("Network full");
             return false;
@@ -227,11 +205,11 @@ export class Network {
         return false;
     }
 
-    isRouterof(komponentMac: string) : boolean {
-        return this.macAdress === komponentMac;
+    isRouterOf(componentMac: string) : boolean {
+        return this.macAddress === componentMac;
     }
 
-    destroyNetwork() : IterableIterator<[string, Komponent]> {
+    destroyNetwork() : IterableIterator<[string, Component]> {
         // reset all components in the network to unconnected state
         this.networkDevices.forEach((component) => {
             component.inNetwork = false;
@@ -257,14 +235,14 @@ export class Network {
             let sendMac = netMap.get(networkIP);
             console.log(sendMac);
             
-            //TODO : mac Adress
+            //TODO : mac Address
             if(!sendMac || ipAddress.isNull(sendMac)) {
                 packet.status = status.FAILED;
                 return [false, ""];
             }
             // send to next Network
             packet.status = status.SUCCESS;
-            packet.travelNetwork(this.macAdress, sendMac);
+            packet.travelNetwork(this.macAddress, sendMac);
             return [true, ""];
         }
 
@@ -272,13 +250,13 @@ export class Network {
         if (toDevice === undefined) {
             // in a network with a direct connection
             packet.status = status.SUCCESS;
-            packet.travelNetwork(this.macAdress, toMac);
+            packet.travelNetwork(this.macAddress, toMac);
             return [true, ""]
         }
 
-        var data = toDevice.receiveAndHandlePacket(packet);
+        let data = toDevice.receiveAndHandlePacket(packet);
         packet.status = status.TERMINATED_SUCCESS;
-        packet.travelNetwork(this.macAdress, toMac);
+        packet.travelNetwork(this.macAddress, toMac);
         return [false, data];
     }
 }
@@ -335,7 +313,7 @@ export class Packet{
 }
 
 
-export class Komponent {
+export class Component {
     type : string;
     connections : Set<string>;
     ipAddress : ipAddress;
@@ -383,12 +361,12 @@ export class DijkstraNode {
 }
 
 export class DijkstraEdge {
-    lenght : number;
+    length : number;
     StartNode : DijkstraNode;
     EndNode : DijkstraNode;
 
-    constructor(lenght : number, StartNode : DijkstraNode,  EndNode : DijkstraNode) {
-        this.lenght = lenght;
+    constructor(length : number, StartNode : DijkstraNode,  EndNode : DijkstraNode) {
+        this.length = length;
         this.StartNode = StartNode;
         this.EndNode = EndNode;
     }

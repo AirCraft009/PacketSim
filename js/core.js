@@ -1,4 +1,4 @@
-import { DijkstraEdge, DijkstraNode, ipAddress, Komponent, Network, Packet } from "./network.js";
+import { DijkstraEdge, DijkstraNode, ipAddress, Component, Network, Packet } from "./network.js";
 import { checkValidRouterIP } from "./util.js";
 export class CoreState {
     networks;
@@ -18,7 +18,7 @@ export class CoreState {
     }
     addComponent(type) {
         // Create a new component with a default IP of
-        let component = new Komponent(type, new ipAddress("0.0.0.0"));
+        let component = new Component(type, new ipAddress("0.0.0.0"));
         this.unconnectedComponents.set(component.macAddress.toString(), component);
         return [component.macAddress.toString(), component.ipAddress.toString()];
     }
@@ -27,7 +27,7 @@ export class CoreState {
             return false;
         }
         //null is checked in checkValidRouterIP
-        let router = new Komponent("router", new ipAddress(ipString));
+        let router = new Component("router", new ipAddress(ipString));
         if (this.ipInUseByNetwork(router.ipAddress)) {
             return false;
         }
@@ -46,7 +46,7 @@ export class CoreState {
             }
         }
         this.networks.forEach((network) => {
-            if (network.isRouterof(componentMac)) {
+            if (network.isRouterOf(componentMac)) {
                 this.unconnectedComponents = new Map([...this.unconnectedComponents.entries(), ...network.destroyNetwork()]);
                 let strIP = network.networkIp.toString();
                 this.networks.delete(strIP);
@@ -77,7 +77,7 @@ export class CoreState {
             return this.unconnectedComponents.get(mac);
         }
         for (const network of this.networks.values()) {
-            if (network.isRouterof(mac)) {
+            if (network.isRouterOf(mac)) {
                 return network.router;
             }
             if (network.networkDevices.has(mac)) {
@@ -97,7 +97,7 @@ export class CoreState {
         this.connectionMap.get(fromMac)?.push(toMac);
         this.connectionMap.get(toMac)?.push(fromMac);
         // connect components is only called after checking for existing connections with alreadyConnected and the other checks in 
-        // isvalidConnection so we can assume both components exist and are not already connected
+        // isValidConnection so we can assume both components exist and are not already connected
         let fromComp = this.getComponentByMac(fromMac);
         let toComp = this.getComponentByMac(toMac);
         if (fromComp.type === "router" && toComp.type === "router") {
@@ -109,8 +109,8 @@ export class CoreState {
             toNode.outgoingEdges.push(new DijkstraEdge(1, toNode, fromNode));
             let fromNet = this.networks.get(fromIp);
             let toNet = this.networks.get(toIP);
-            fromNet.arpTable.set(toIP, toNet.macAdress);
-            toNet.arpTable.set(fromIp, fromNet.macAdress);
+            fromNet.arpTable.set(toIP, toNet.macAddress);
+            toNet.arpTable.set(fromIp, fromNet.macAddress);
         }
         if (fromComp.inNetwork && !toComp.inNetwork) {
             let fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString());
@@ -141,10 +141,10 @@ export class CoreState {
         }
         let fromNetwork = this.networks.get(fromComp.ipAddress.getNetworkPart().toString());
         if (fromNetwork) {
-            // packet uses the fromNetwork.macAdress as source 
-            // even when it comes from a in network device 
+            // packet uses the fromNetwork.macAddress as source
+            // even when it comes from an in network device
             // to make the handling easier by allowing the router to be found by getComponentByMac
-            let packet = new Packet(data, toIp, fromComp.ipAddress.toString(), fromMac, fromNetwork.macAdress, this.allPackets.length);
+            let packet = new Packet(data, toIp, fromComp.ipAddress.toString(), fromMac, fromNetwork.macAddress, this.allPackets.length);
             this.allPackets.push(packet);
             this.activePackets.push(this.allPackets.length - 1);
             return packet;
@@ -156,7 +156,7 @@ export class CoreState {
         if (!fromRouter) {
             return [false, ""];
         }
-        // TODO: find a way to cache the network map in network and only updating when necesarry
+        // TODO: find a way to cache the network map in network and only updating when necessary
         let data = this.networks.get(ipAddress.toNetwork(fromRouter.ipAddress.toString())).sendPacket(packet, this.makeNetworkMap(fromRouter.ipAddress.toString()));
         if (!data[0]) {
             //not active anymore 
@@ -207,7 +207,7 @@ export class CoreState {
             for (const edge of current.outgoingEdges) {
                 const neighbor = copiedTopology.find(n => n.ip === edge.EndNode.ip);
                 if (neighbor && unvisited.has(neighbor)) {
-                    const newDistance = current.distance + edge.lenght;
+                    const newDistance = current.distance + edge.length;
                     if (newDistance < neighbor.distance) {
                         neighbor.distance = newDistance;
                         neighbor.previous = current;
@@ -235,19 +235,19 @@ export class CoreState {
                 continue;
             }
             // prevNode is not null and no prevNodes can be null
-            // root.previous == root so if prevNode.previous.ip == ip the rootnode was found
-            let routemac = prevNode.mac;
+            // root.previous == root so if prevNode.previous.ip == ip the root node was found
+            let routerMac = prevNode.mac;
             while (prevNode.previous.ip !== ip) {
                 // if the node is already in the map use the map of the prevNode
                 let possibleNode = networkMap.get(prevNode.ip);
                 if (possibleNode !== undefined) {
-                    routemac = possibleNode;
+                    routerMac = possibleNode;
                     break;
                 }
                 prevNode = prevNode.previous;
-                routemac = prevNode.mac;
+                routerMac = prevNode.mac;
             }
-            networkMap.set(node.ip, routemac);
+            networkMap.set(node.ip, routerMac);
         }
         return networkMap;
     }

@@ -41,15 +41,12 @@ function getGrid() {
 function getModalEL() {
     return document.getElementById('textModal');
 }
-function getPacketModalEl() {
-    return document.getElementById('packetModal');
-}
 /**
  * create cells & core visual functionality\
  * drag and drop, click to connect/components\
  * right click to remove component
  *
- * @param {ammount of cells} n
+ * @param n number of cells
  */
 export function createGrid(n) {
     for (let i = 0; i < n; i++) {
@@ -93,7 +90,7 @@ function boilerDragListeners(cell) {
         cell.classList.remove("hover");
     });
 }
-function removeAtrributesFromClone(clone) {
+function removeAttributesFromClone(clone) {
     clone.removeAttribute("id");
     clone.removeAttribute("data-template");
     clone.draggable = false; // false because I don't want to move the lines along with the component
@@ -116,7 +113,7 @@ function dropListener(cell, index) {
             return;
         }
         const clone = template.cloneNode(true);
-        removeAtrributesFromClone(clone);
+        removeAttributesFromClone(clone);
         cell.appendChild(clone);
         if (type === "router") {
             getRouterIpModal().then((ipString) => {
@@ -153,7 +150,7 @@ function removeVisual(i, cell) {
     return;
 }
 function connectComponents(i, cell) {
-    if (isvalidConnection(connStartIndex, i)) {
+    if (isValidConnection(connStartIndex, i)) {
         connectingMode = false;
         addConnection(cell, i);
         return;
@@ -215,7 +212,7 @@ function disableInput() {
     window.addEventListener("contextmenu", (e) => {
         e.preventDefault();
     });
-    window.addEventListener("keydown", (e) => {
+    window.addEventListener("keydown", () => {
         connectingMode = false;
     });
     // prevent new lines cause they look bad
@@ -248,7 +245,6 @@ function enableLogClick() {
 }
 function openEditBox() {
     if (!selected || connStartCell == null) {
-        console.log("thats why!!!");
         return;
     }
     updateState();
@@ -272,7 +268,7 @@ function renderEditBox() {
     });
 }
 function renderPacketModal() {
-    document.querySelectorAll(".modal-ediatble").forEach((el) => {
+    document.querySelectorAll(".modal-editable").forEach((el) => {
         const key = el.dataset.key;
         if (key in packetModalState) {
             el.textContent = packetModalState[key];
@@ -295,20 +291,20 @@ function activateEditMode() {
     }
 }
 function addConnection(cell, index) {
-    // connstartCell was alr checked for null before calling this function
+    // connStartCell was alr checked for null before calling this function
     Utils.drawLine(connStartCell, cell, connStartIndex, index);
     coreState.connectComponents(indexToMacMap.get(connStartIndex), indexToMacMap.get(index));
 }
-function isvalidConnection(fromindex, toindex) {
+function isValidConnection(fromIndex, toIndex) {
     if (connectingMode) {
         // check for connection to self
-        if (fromindex == toindex)
+        if (fromIndex == toIndex)
             return false;
         // check if connection already exists
-        if (indexToMacMap.get(fromindex) === undefined || indexToMacMap.get(toindex) === undefined) {
+        if (indexToMacMap.get(fromIndex) === undefined || indexToMacMap.get(toIndex) === undefined) {
             return false;
         }
-        return !coreState.alreadyConnected(indexToMacMap.get(fromindex), indexToMacMap.get(toindex));
+        return !coreState.alreadyConnected(indexToMacMap.get(fromIndex), indexToMacMap.get(toIndex));
     }
     return false;
 }
