@@ -157,7 +157,7 @@ export class Network {
         this.numDevices = 0;
         this.networkDevices = new Map();
         this.router = router;
-        this.travelNodes = new Array();
+        this.travelNodes = [];
         this.arpTable = new Map();
         this.macAdress = router.macAddress.toString();
     }
@@ -165,7 +165,7 @@ export class Network {
      *
      * doesn't correctly handle removal of comps yet if a device is removed that isn't at pos len-1
      * the next added device will be assigned the same ip as the current top(len-1) position
-     * @param index
+     * @param component
      * @returns
      */
     addDevice(component) {
@@ -192,7 +192,6 @@ export class Network {
             this.arpTable.delete(ipComp.ipAddress.toString());
             return true;
         }
-        ;
         return false;
     }
     isRouterof(komponentMac) {
@@ -250,12 +249,6 @@ export var status;
     status[status["TERMINATED_FAILED"] = 3] = "TERMINATED_FAILED";
     status[status["PENDING"] = 4] = "PENDING";
 })(status || (status = {}));
-class PacketId {
-    static id = -1;
-    static getNextId() {
-        return this.id += 1;
-    }
-}
 export class Packet {
     id;
     data;

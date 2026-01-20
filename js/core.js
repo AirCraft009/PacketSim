@@ -121,9 +121,6 @@ export class CoreState {
             toNetwork.addDevice(fromComp);
         }
     }
-    addConnected(start) {
-        start.connections;
-    }
     getStateOfComponent(mac) {
         let component = this.getComponentByMac(mac);
         if (component === null) {
@@ -166,7 +163,6 @@ export class CoreState {
             this.activePackets = this.activePackets.filter(packet_index => this.allPackets[packet_index].id !== packet.id);
             return data;
         }
-        ;
         return [true, ""];
     }
     stepTick() {
