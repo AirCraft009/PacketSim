@@ -12,5 +12,10 @@
   "include": ["ts/**/*.ts"],
   "exclude": ["node_modules"],
 
+  "typedocOptions": {
+    "out": "docs/td",
+    "name": "PacketSim",
+    "entryPoints": "ts/main.ts",
+  }
 
 }

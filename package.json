@@ -1,5 +1,7 @@
 {
   "devDependencies": {
+    "typedoc": "^0.28.16",
+    "typedoc-plugin-missing-exports": "^4.1.2",
     "typescript": "^5.9.3"
   }
 }

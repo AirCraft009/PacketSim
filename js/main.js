@@ -1,17 +1,30 @@
+// main.ts combines input & visual(unnecessary to split them up for such a small project)
 import * as Utils from "./util.js";
 import * as Core from "./core.js";
 import { ipAddress } from "./network.js";
 const modal = new window.bootstrap.Modal(getModalEL());
 //const modalPacket = new window.bootstrap.Modal(getPacketModalEl());
+// global mutables
+// has on component been selected and will connect to the next clicked comp
 let connectingMode = false;
+// where did the connection originateFrom
 let connStartCell = null;
+// from 0 - side * side what index does the cell have (for Utils.drawLine() because it adds the index for easier removal)
 let connStartIndex = 0;
+// is smth selected(highlighted blue)
+// TODO: find a better sol so adding other highlights is easier
 let selected = false;
-const IPToIndexMap = new Map();
+// the logical sim works with macAddresses
+// so a cell index to Mac map is used to query for data from the coreState
 const indexToMacMap = new Map();
+// the logical simulation
+// exchanges information that should be rendered
+// packet-log; device addition; device removal; device connection
 const coreState = new Core.CoreState();
-// default state for the editor on the right
-// also used for rendering new information
+// state of the component-editor on the right
+// all keys are also in id=editor
+// there the attribute data-key reflects these vals
+// this is used to exchange information with the HTML
 const state = {
     ip: "192.168.1.0",
     type: "router",
@@ -20,6 +33,9 @@ const state = {
     gateway: "192.168.1.0",
     subnetmask: "/24"
 };
+// like above, but it's the state of the packetModal
+// It opens up whe clicking on the blue part of a new Packet message in the log
+// then the information in loaded into this and synced
 const packetModalState = {
     targetIp: "192.168.1.0",
     sourceIp: "192.168.1.0",
@@ -35,9 +51,15 @@ export function InitDocumentListeners() {
     disableInput();
     enableLogClick();
 }
+/**
+ * helper method to make sure IDE's serve static JS and don't try to use Node.js
+ */
 function getGrid() {
     return document.getElementById("grid");
 }
+/**
+ * helper method to make sure IDE's serve static JS and don't try to use Node.js
+ */
 function getModalEL() {
     return document.getElementById('textModal');
 }
@@ -59,13 +81,29 @@ export function createGrid(n) {
     }
 }
 // utility functions for component management and visual connection
+/**
+ * enables hover listeners
+ * then handles adding devices via the dropListener's
+ * @param cell the cell to add the listener to
+ * @param index the index of the cell (because it's added to the indexToMacMap)
+ */
 function setDragListeners(cell, index) {
     boilerDragListeners(cell);
     dropListener(cell, index);
 }
+/**
+ * set/resets highlights \
+ * handles device removal (right click) \
+ * handles device connection (left click when one device is alr. connected) \
+ * handles opening the component-editor on the left\
+ * removing from the coreState requires the indexToMacMap
+ *
+ * @param cell the cell to add the listener to
+ * @param i the index of the cell
+ */
 function handleMouseClick(cell, i) {
     cell.addEventListener("mousedown", (e) => {
-        resetHighlight();
+        removeFocusFromDevice();
         if (hasChild(cell)) {
             // right click to remove component
             if (e.button == 2) {
@@ -81,6 +119,10 @@ function handleMouseClick(cell, i) {
         }
     });
 }
+/**
+ * basic dragListeners
+ * @param cell the specific cell to add them to
+ */
 function boilerDragListeners(cell) {
     cell.addEventListener("dragover", (e) => e.preventDefault());
     cell.addEventListener("dragenter", () => {
@@ -90,17 +132,37 @@ function boilerDragListeners(cell) {
         cell.classList.remove("hover");
     });
 }
+/**
+ * removes id & data-template\
+ * no double id and no duplicating when dragging(expand)\
+ * no dragging currently (recalculating all connection lines)
+ * @param clone the dragged device
+ */
 function removeAttributesFromClone(clone) {
     clone.removeAttribute("id");
     clone.removeAttribute("data-template");
     clone.draggable = false; // false because I don't want to move the lines along with the component
     clone.style.pointerEvents = "none"; // optional
 }
+/**
+ * placing device\
+ * \
+ * opens the routerIpModal if device is a router\
+ * on invalid ip; not unique; -> \
+ * ip not ending in 0 (/24 subnet)\
+ * => removes device and alerts user\
+ * \
+ * index to add to indexToMacMap\
+ * resets highlight and connectionStart\
+ *
+ * @param cell the specific cell to add the device to
+ * @param index the index of the cell
+ */
 function dropListener(cell, index) {
     cell.addEventListener("drop", (e) => {
         e.preventDefault();
         //  remove the highlight of the currently selected component on drop
-        resetHighlight();
+        removeFocusFromDevice();
         cell.classList.remove("hover");
         const type = e.dataTransfer?.getData("text/plain");
         if (!type)
@@ -120,7 +182,6 @@ function dropListener(cell, index) {
                 let routerMac = coreState.addRouter(ipString);
                 if (routerMac !== false) {
                     indexToMacMap.set(index, routerMac[0]);
-                    IPToIndexMap.set(routerMac[1], index);
                     return;
                 }
                 removeVisual(index, cell);
@@ -129,10 +190,13 @@ function dropListener(cell, index) {
         }
         let comp = coreState.addComponent(type);
         indexToMacMap.set(index, comp[0]);
-        IPToIndexMap.set(comp[1], index);
     });
 }
-function resetHighlight() {
+/**
+ * resets highlight\
+ * deselects the device currently selected(connStart)
+ */
+function removeFocusFromDevice() {
     if (connStartCell == null)
         return;
     connStartCell.style.backgroundColor = "";
@@ -140,6 +204,12 @@ function resetHighlight() {
     let sendBtn = document.querySelector("button.btn.btn-dark");
     sendBtn.disabled = true;
 }
+/**
+ * Remove a device visually from a cell\
+ * also removes it's connections to other devices visually
+ * @param i index of the cell
+ * @param cell the specific cell to remove the device from
+ */
 function removeVisual(i, cell) {
     // remove the picture
     cell.removeChild(cell.firstChild);
@@ -149,6 +219,17 @@ function removeVisual(i, cell) {
     selected = false;
     return;
 }
+/**
+ * second device clicked after one was connStart\
+ * Connects the components and checks for valid connection(surface)\
+ * real logical checks in coreState\
+ * also connects logical not only visually\
+ *
+ * selects end devices
+ *
+ * @param i
+ * @param cell
+ */
 function connectComponents(i, cell) {
     if (isValidConnection(connStartIndex, i)) {
         connectingMode = false;
@@ -161,7 +242,7 @@ function connectComponents(i, cell) {
 }
 /**
  * Asks the user for an IP address via a modal.
- * @returns The ip that was entered into the modal
+ * @returns Promise - ip or null if an invalid IP is entered
  */
 function getRouterIpModal() {
     // return a promise that resolves when the modal form is submitted
@@ -194,6 +275,11 @@ function getRouterIpModal() {
         getModalEL().addEventListener('hidden.bs.modal', closeHandler);
     });
 }
+/**
+ * sets up documentDrag\
+ *
+ * readies e.dataTransfer so the dropListener can extract type data\
+ */
 function initDocumentDrag() {
     document.querySelectorAll(".draggable").forEach((el) => {
         el.addEventListener("dragstart", (e) => {
@@ -208,6 +294,10 @@ function initDocumentDrag() {
         });
     });
 }
+/**
+ *  disables right-clicking \
+ *  newlines in the editable fields of the component editor
+ */
 function disableInput() {
     window.addEventListener("contextmenu", (e) => {
         e.preventDefault();
@@ -226,6 +316,10 @@ function disableInput() {
         });
     });
 }
+/**
+ * if blue part of packet-log-entry is clicked\
+ * open the packet modal and render the data of the packet
+ */
 function enableLogClick() {
     document.querySelectorAll(".modal-editable").forEach((editable) => {
         editable.addEventListener("mousedown", (e) => {
@@ -243,6 +337,10 @@ function enableLogClick() {
         });
     });
 }
+/**
+ * when a device is selected\\in focus\
+ * it updates the component-editor
+ */
 function openEditBox() {
     if (!selected || connStartCell == null) {
         return;
@@ -250,6 +348,9 @@ function openEditBox() {
     updateState();
     renderEditBox();
 }
+/**
+ * Updates the state dict wit the values of the selected device
+ */
 function updateState() {
     let componentState = coreState.getStateOfComponent(indexToMacMap.get(connStartIndex));
     state.type = componentState[0];
@@ -258,7 +359,10 @@ function updateState() {
     state.connection = componentState[3];
     state.gateway = componentState[4];
 }
-// renders new information to the edit box
+/**
+ * Takes values from the state dict\
+ * writes them into the fields with the same data-key
+ */
 function renderEditBox() {
     document.querySelectorAll(".editable").forEach((el) => {
         const key = el.dataset.key;
@@ -267,6 +371,9 @@ function renderEditBox() {
         }
     });
 }
+/**
+ *  Does the same as renderEditBox() just with the packet data
+ */
 function renderPacketModal() {
     document.querySelectorAll(".modal-editable").forEach((el) => {
         const key = el.dataset.key;
@@ -275,6 +382,10 @@ function renderPacketModal() {
         }
     });
 }
+/**
+ * Does the same as updateState just takes args\
+ * Because data has to be queried from the coreState
+ */
 function updatePacketModal(targetIP, sourceIP, sourceMac, targetMac, data) {
     packetModalState.targetIp = targetIP;
     packetModalState.sourceIp = sourceIP;
@@ -282,6 +393,10 @@ function updatePacketModal(targetIP, sourceIP, sourceMac, targetMac, data) {
     packetModalState.targetMac = targetMac;
     packetModalState.textContent = data;
 }
+/**
+ * opens the EditBox\
+ * enables the sendPacket button\
+ */
 function activateEditMode() {
     if (connectingMode && connStartCell != null) {
         connStartCell.style.backgroundColor = "blue";
@@ -290,11 +405,23 @@ function activateEditMode() {
         openEditBox();
     }
 }
+/**
+ * visually and logically adds a device
+ */
 function addConnection(cell, index) {
     // connStartCell was alr checked for null before calling this function
     Utils.drawLine(connStartCell, cell, connStartIndex, index);
     coreState.connectComponents(indexToMacMap.get(connStartIndex), indexToMacMap.get(index));
 }
+/**
+ * checks if\
+ * it should be connecting\
+ * if the devices are the same\
+ * if any of the cells is empty\
+ * queries if coreState alr has the connection entered\
+ * @param fromIndex start-device of the conn
+ * @param toIndex end-device of the conn
+ */
 function isValidConnection(fromIndex, toIndex) {
     if (connectingMode) {
         // check for connection to self
@@ -308,6 +435,10 @@ function isValidConnection(fromIndex, toIndex) {
     }
     return false;
 }
+/**
+ * used for checking if clicks are valid
+ * @param cell
+ */
 function hasChild(cell) {
     if (!cell.firstChild) {
         connectingMode = false;
@@ -315,6 +446,15 @@ function hasChild(cell) {
     }
     return true;
 }
+/**
+ * triggered when sendPacket-button is pressed\
+ * checks if target ip and packet data is entered\
+ * checks if the target ip is valid\
+ *
+ * then hands the responsibility to coreState\
+ *
+ * lastly it sends the new Packet message and enables the clickability
+ */
 export function sendPacket() {
     if (!selected) {
         return;
@@ -338,6 +478,12 @@ export function sendPacket() {
     Utils.addPacket(packet);
     enableLogClick();
 }
+/**
+ * triggers when the stepTick-button is clicked\
+ * lets coreState handle the packets changing\
+ *
+ * then logs the movement\
+ */
 export function stepTick() {
     let packet_indexes = coreState.stepTick();
     for (let i of packet_indexes) {
@@ -348,6 +494,10 @@ export function stepTick() {
         Utils.addLine(packet.formatMessage());
     }
 }
+/**
+ * visually clears the log\
+ * removes all not traveling(activate) packets in coreState
+ */
 export function clearLog() {
     Utils.clearLog();
     coreState.removeInactivePackets();
