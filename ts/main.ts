@@ -26,11 +26,19 @@ let connStartIndex: number = 0;
 // is smth selected(highlighted blue)
 // TODO: find a better sol so adding other highlights is easier
 let selected = false;
+// the logical sim works with macAddresses
+// so a cell index to mac map is used to query for data from the coreState
 const indexToMacMap: Map<number, mac> = new Map();
+// the logical simulation
+// exchanges information that should be rendered
+// packet-log; device addition; device removal; device connection
 const coreState = new Core.CoreState();
 
-// default state for the editor on the right
-// also used for rendering new information
+
+// state of the component-editor on the right
+// all keys are also in id=editor
+// there the attribute data-key reflects these vals
+// this is used to exchange information with the HTML
 const state = {
   ip: "192.168.1.0",
   type: "router",
@@ -40,6 +48,9 @@ const state = {
   subnetmask: "/24"
 };
 
+// like above, but it's the state of the packetModal
+// It opens up whe clicking on the blue part of a new Packet message in the log
+// then the information in loaded into this and synced
 const packetModalState = {
   targetIp: "192.168.1.0",
   sourceIp: "192.168.1.0",
@@ -57,10 +68,16 @@ export function InitDocumentListeners() {
   enableLogClick();
 }
 
+/**
+ * helper method to make sure IDE's serve static JS and don't try to use Node.js
+ */
 function getGrid() {
   return document.getElementById("grid") as HTMLElement;
 }
 
+/**
+ * helper method to make sure IDE's serve static JS and don't try to use Node.js
+ */
 function getModalEL(){
   return document.getElementById('textModal') as HTMLElement;
 }
@@ -91,17 +108,31 @@ export function createGrid(n: number) {
 
 // utility functions for component management and visual connection
 
+/**
+ * enables hover listeners
+ * then handles adding devices via the dropListener's
+ * @param cell the cell to add the listener to
+ * @param index the index of the cell (because it's added to the indexToMacMap)
+ */
 function setDragListeners(cell: HTMLElement, index: number) {
-
   boilerDragListeners(cell);
   dropListener(cell, index);
 }
 
 
-
+/**
+ * set/resets highlights \
+ * handles device removal (right click) \
+ * handles device connection (left click when one device is alr. connected) \
+ * handles opening the component-editor on the left\
+ * removing from the coreState requires the indexToMacMap
+ *
+ * @param cell the cell to add the listener to
+ * @param i the index of the cell
+ */
 function handleMouseClick(cell: HTMLElement, i: number) {
   cell.addEventListener("mousedown", (e) => {
-    resetHighlight();
+    removeFocusFromDevice();
     if (hasChild(cell)) {
       // right click to remove component
       if (e.button == 2) {
@@ -120,7 +151,10 @@ function handleMouseClick(cell: HTMLElement, i: number) {
 }
 
 
-
+/**
+ * basic dragListeners
+ * @param cell the specific cell to add them to
+ */
 function boilerDragListeners(cell: HTMLElement) {
   cell.addEventListener("dragover", (e) => e.preventDefault());
 
@@ -133,6 +167,12 @@ function boilerDragListeners(cell: HTMLElement) {
   });
 }
 
+/**
+ * removes id & data-template\
+ * no double id and no duplicating when dragging(expand)\
+ * no dragging currently (recalculating all connection lines)
+ * @param clone the dragged device
+ */
 function removeAttributesFromClone(clone: HTMLElement) {
   clone.removeAttribute("id");
   clone.removeAttribute("data-template");
@@ -142,11 +182,25 @@ function removeAttributesFromClone(clone: HTMLElement) {
 }
 
 
+/**
+ * placing device\
+ * \
+ * opens the routerIpModal if device is a router\
+ * on invalid ip; not unique; -> \
+ * ip not ending in 0 (/24 subnet)\
+ * => removes device and alerts user\
+ * \
+ * index to add to indexToMacMap\
+ * resets highlight and connectionStart\
+ *
+ * @param cell the specific cell to add the device to
+ * @param index the index of the cell
+ */
 function dropListener(cell: HTMLElement, index: number) {
   cell.addEventListener("drop", (e: DragEvent) => {
     e.preventDefault();
     //  remove the highlight of the currently selected component on drop
-    resetHighlight();
+    removeFocusFromDevice();
     cell.classList.remove("hover");
     const type = e.dataTransfer?.getData("text/plain")
     if (!type) return;
@@ -182,7 +236,11 @@ function dropListener(cell: HTMLElement, index: number) {
   });
 }
 
-function resetHighlight() {
+/**
+ * resets highlight\
+ * deselects the device currently selected(connStart)
+ */
+function removeFocusFromDevice() {
   if (connStartCell == null) return;
   connStartCell.style.backgroundColor = "";
   selected = false;
@@ -190,6 +248,12 @@ function resetHighlight() {
   sendBtn.disabled = true;
 }
 
+/**
+ * Remove a device visually from a cell\
+ * also removes it's connections to other devices visually
+ * @param i index of the cell
+ * @param cell the specific cell to remove the device from
+ */
 function removeVisual(i : number, cell : HTMLElement) {
   // remove the picture
   cell.removeChild(cell.firstChild as ChildNode);
@@ -200,6 +264,17 @@ function removeVisual(i : number, cell : HTMLElement) {
   return;
 }
 
+/**
+ * second device clicked after one was connStart\
+ * Connects the components and checks for valid connection(surface)\
+ * real logical checks in coreState\
+ * also connects logical not only visually\
+ *
+ * selects end devices
+ *
+ * @param i
+ * @param cell
+ */
 function connectComponents(i: number, cell: HTMLElement) {
   if (isValidConnection(connStartIndex, i)) {
     connectingMode = false;
@@ -213,7 +288,7 @@ function connectComponents(i: number, cell: HTMLElement) {
 
 /**
  * Asks the user for an IP address via a modal.
- * @returns The ip that was entered into the modal
+ * @returns Promise - ip or null if an invalid IP is entered
  */
 function getRouterIpModal() : Promise<string | null> {
   // return a promise that resolves when the modal form is submitted
@@ -255,6 +330,11 @@ function getRouterIpModal() : Promise<string | null> {
 }
 
 
+/**
+ * sets up documentDrag\
+ *
+ * readies e.dataTransfer so the dropListener can extract type data\
+ */
 function initDocumentDrag() {
 
   document.querySelectorAll(".draggable").forEach((el : any) => {
@@ -271,6 +351,9 @@ function initDocumentDrag() {
   });
 }
 
+/**
+ *
+ */
 function disableInput() {
   window.addEventListener("contextmenu", (e) => {
     e.preventDefault();
