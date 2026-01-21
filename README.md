@@ -4,6 +4,10 @@
 - run npm ci
 - all relevant packages(2) should be loaded
 
+## Use
+- always use an extension like live-server in vscode
+- serving html files statically will result in failed imports
+
 ## Overwiev
 
 - Simulate a Network with Routers & Hosts
