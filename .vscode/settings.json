@@ -1,4 +1,4 @@
 {
-    "liveServer.settings.port": 5543,
-    "liveServer.settings.multiRootWorkspaceName": "PacketSim"
+    "liveServer.settings.port": 5500,
+    "liveServer.settings.multiRootWorkspaceName": "PacketSim/html/simulator.html"
 }
